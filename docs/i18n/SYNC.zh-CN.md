@@ -121,6 +121,30 @@ git push origin v0.4.5
 - 或者用 GitHub → Actions → **Release → Run workflow**（`workflow_dispatch`）：只产出可下载的构建产物，
   不自动发布 Release，由你手动发布。
 
+### 5.1 本地构建 + 手动发布（Actions 不可用时，当前主路径）
+
+上游的 release 工作流在本仓库从未运行过（原因见 §6），所以 Windows 版目前是**本机构建后手动发布**：
+
+```powershell
+git checkout zh-cn          # 确认在汉化分支、工作区干净
+.\.venv\Scripts\python.exe -m PyInstaller wifit3.spec --noconfirm --clean   # -> dist\wifit3.exe
+
+.\dist\wifit3.exe --version # -> wifit3 0.4.5
+.\dist\wifit3.exe --smoke   # 上游 CI 的无头自检：libusb 可加载 + 全屏渲染 + 驱动发现非空，退出码 0
+
+Copy-Item .\dist\wifit3.exe .\dist\wifit3-windows-x64.exe -Force   # 与上游资源同名
+Get-FileHash .\dist\wifit3-windows-x64.exe -Algorithm SHA256       # 写进发版说明
+
+git tag -a v0.4.5-zh.1 -m "wifit3 0.4.5 中文版"
+git push origin v0.4.5-zh.1
+gh release create v0.4.5-zh.1 .\dist\wifit3-windows-x64.exe --repo ch3n4y/wifit3 --title "wifit3 0.4.5 中文版（Windows x64）" --notes-file <发版说明.md>
+```
+
+- 用 `-zh.N` 后缀的 tag **不经过**工作流的版本门槛（根本不走工作流），所以不必改 `__version__`。
+- Linux / macOS **不能**在这里交叉编译（PyInstaller 不支持跨平台），必须在各自系统上构建。
+- 发布后建议把资源下载回来比对 SHA256，并跑一次 `--version` / `--smoke`。
+- 已发布的先例：`v0.4.5-zh.1`（`wifit3-windows-x64.exe`，38,371,872 字节，sha256 `00625ba6…`）。
+
 ## 6. 常见问题
 
 **Q：为什么不走 PR、直接推 `zh-cn`？**
