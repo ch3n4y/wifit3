@@ -44,7 +44,7 @@ async def test_verify_blocked_when_campaign_active():
     try:
         res = await verifier.verify_credential(cap, MagicMock())
         assert res.status == VerifyStatus.ERROR
-        assert "deauth campaign is active" in res.body
+        assert "deauth 战役正在运行" in res.body
     finally:
         Campaign.active = orig_active
 
@@ -57,7 +57,7 @@ async def test_verify_no_members():
 
     res = await verifier.verify_credential(cap, array)
     assert res.status == VerifyStatus.ERROR
-    assert "No wireless adapter available" in res.body
+    assert "无可用无线网卡" in res.body
 
 
 async def test_verify_ap_not_in_range():
@@ -69,7 +69,7 @@ async def test_verify_ap_not_in_range():
 
     res = await verifier.verify_credential(cap, array)
     assert res.status == VerifyStatus.ERROR
-    assert "not in range" in res.body
+    assert "不在范围内" in res.body
 
 
 async def test_verify_wpa_psk_success(monkeypatch):
@@ -133,8 +133,8 @@ async def test_verify_wpa_psk_success(monkeypatch):
 
     res = await verifier.verify_credential(cap, array)
     assert res.status == VerifyStatus.SUCCESS
-    assert res.title == "PSK verified for TestNet"
-    assert 'Key "password" still works' in res.body
+    assert res.title == "PSK 验证成功：TestNet"
+    assert '密钥 “password” 仍然有效' in res.body
 
 
 async def test_verify_wpa_psk_no_m3(monkeypatch):
@@ -185,7 +185,7 @@ async def test_verify_wpa_psk_no_m3(monkeypatch):
 
     res = await verifier.verify_credential(cap, array)
     assert res.status == VerifyStatus.INCORRECT
-    assert 'Key "wrongpassword" is incorrect (no M3)' in res.body
+    assert '密钥 “wrongpassword” 不正确（无 M3）' in res.body
 
 
 async def test_verify_wps_pin_success(monkeypatch):
@@ -222,7 +222,7 @@ async def test_verify_wps_pin_success(monkeypatch):
 
     res = await verifier.verify_credential(cap, array)
     assert res.status == VerifyStatus.SUCCESS
-    assert 'PIN "12345670" still works' in res.body
+    assert 'PIN “12345670” 仍然有效' in res.body
 
 
 async def test_empty_wps_pin_survives_save_reload_and_verification(monkeypatch):
@@ -262,7 +262,7 @@ async def test_empty_wps_pin_survives_save_reload_and_verification(monkeypatch):
     res = await verifier.verify_credential(cap, array)
 
     assert res.status == VerifyStatus.SUCCESS
-    assert 'PIN "<empty>" still works' in res.body
+    assert 'PIN “<empty>” 仍然有效' in res.body
     try_pin.assert_awaited_once_with("")
 
 
@@ -295,7 +295,7 @@ async def test_missing_wps_pin_does_not_fall_back_to_psk():
     res = await verifier.verify_credential(cap, array)
 
     assert res.status == VerifyStatus.ERROR
-    assert "Stored WPS PIN is missing" in res.body
+    assert "存储的 WPS PIN 缺失" in res.body
 
 
 async def test_verify_wps_pin_invalid(monkeypatch):
@@ -332,7 +332,7 @@ async def test_verify_wps_pin_invalid(monkeypatch):
 
     res = await verifier.verify_credential(cap, array)
     assert res.status == VerifyStatus.INCORRECT
-    assert 'PIN "12345670" is incorrect' in res.body
+    assert 'PIN “12345670” 不正确' in res.body
 
 
 async def test_verify_wep_key_passive(monkeypatch):
@@ -391,4 +391,4 @@ async def test_verify_wep_key_passive(monkeypatch):
 
     res = await verifier.verify_credential(cap, array)
     assert res.status == VerifyStatus.SUCCESS
-    assert f'Key "{hex_key}" still works' in res.body
+    assert f'密钥 “{hex_key}” 仍然有效' in res.body

@@ -15,11 +15,11 @@ class VaultDrawer(ModalScreen):
     """The Vault drawer overlay."""
 
     BINDINGS = [
-        Binding("v", "dismiss_drawer", "Close", show=False),
-        Binding("escape", "dismiss_drawer", "Close", show=True),
-        Binding("z", "export_zip", "Export Zip", show=True),
-        Binding("o", "show_directory", "Show Dir", show=True),
-        Binding("q", "app.quit", "Quit", show=True),
+        Binding("v", "dismiss_drawer", "关闭", show=False),
+        Binding("escape", "dismiss_drawer", "关闭", show=True),
+        Binding("z", "export_zip", "导出 ZIP", show=True),
+        Binding("o", "show_directory", "显示目录", show=True),
+        Binding("q", "app.quit", "退出", show=True),
     ]
 
     CSS = """
@@ -119,15 +119,15 @@ class VaultDrawer(ModalScreen):
         try:
             out = self.app.vault.zip_captures(self.app.vault.all_captures())
         except OSError as exc:
-            self.notify(f"Export failed: {exc}", severity="error")
+            self.notify(f"导出失败：{exc}", severity="error")
             return
         if out is None:
-            self.notify("Nothing to export", severity="warning")
+            self.notify("无可导出的内容", severity="warning")
             return
-        self.notify(f"Exported to {out}")
+        self.notify(f"已导出至 {out}")
 
     def action_show_directory(self) -> None:
         try:
             self.app.vault.open_directory()
         except OSError as exc:
-            self.notify(f"Could not open captures dir: {exc}", severity="error")
+            self.notify(f"无法打开抓包目录：{exc}", severity="error")

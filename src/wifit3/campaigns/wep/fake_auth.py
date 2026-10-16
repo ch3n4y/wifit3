@@ -148,8 +148,8 @@ class WepFakeAuth:
                 self.stats.associations += 1
                 if self._announced_failure:
                     self._log(
-                        "[green]✓ Fake-Auth recovered[/green] "
-                        f"[dim](associated as {mac_to_str(self.source_mac)})[/dim]"
+                        "[green]✓ 伪认证已恢复[/green] "
+                        f"[dim](已关联为 {mac_to_str(self.source_mac)})[/dim]"
                     )
                     self._announced_failure = False
                 return True
@@ -157,13 +157,13 @@ class WepFakeAuth:
         # All attempts failed. Back off and log once per episode.
         self.state = "failed"
         if not self.fail_reason:
-            self.fail_reason = "no Assoc resp"
+            self.fail_reason = "无关联响应"
         self.next_reauth_at = time.time() + self._FAIL_BACKOFF
         if not self._announced_failure:
             self._announced_failure = True
             self._log(
-                f"[red]✗ Fake-Auth failed:[/red] {self.fail_reason} "
-                f"[dim](retry in {int(self._FAIL_BACKOFF)}s)[/dim]"
+                f"[red]✗ 伪认证失败：[/red] {self.fail_reason} "
+                f"[dim]({int(self._FAIL_BACKOFF)}s 后重试)[/dim]"
             )
         return False
 
@@ -198,16 +198,16 @@ class WepFakeAuth:
             if pkt.status == 0:
                 self._assoc_ok = True
             elif pkt.status is not None:
-                self.fail_reason = f"Assoc rejected (status {pkt.status}: {desc})"
+                self.fail_reason = f"关联被拒绝 (status {pkt.status}: {desc})"
         elif isinstance(pkt, AuthPacket):
             desc = status_description(pkt.status)
             if pkt.status not in (0, None):
-                self.fail_reason = f"Auth rejected (status {pkt.status}: {desc})"
+                self.fail_reason = f"认证被拒绝 (status {pkt.status}: {desc})"
         elif isinstance(pkt, DeauthPacket):
             # We got kicked
-            kind = "disassoc" if getattr(pkt, "type", "") == "mgmt_10" else "deauth"
+            kind = "已解除关联" if getattr(pkt, "type", "") == "mgmt_10" else "已解除认证"
             desc = reason_description(pkt.reason)
-            self.fail_reason = f"{kind} (reason {pkt.reason}: {desc})"
+            self.fail_reason = f"{kind} (原因 {pkt.reason}: {desc})"
             if self.state == "associated":
                 self.stats.reactive_reauths += 1
             self.state = "ready"

@@ -135,7 +135,7 @@ async def test_install_failure_reports_code_and_detail(monkeypatch):
         ok=False, message="Windows refused the unsigned driver package.", wdi_code=-19, detail="bad inf"))
     ui = FakePrompter()
     assert await win.SetupWindows().install(_DEV, ui) is None
-    assert ui.errors and "libwdi code -19" in ui.errors[0][1] and "bad inf" in ui.errors[0][1]
+    assert ui.errors and "libwdi 代码 -19" in ui.errors[0][1] and "bad inf" in ui.errors[0][1]
 
 
 async def test_install_cancelled_shows_no_error(monkeypatch):
@@ -195,13 +195,13 @@ def test_verify_restore_ignores_a_sibling_bluetooth_problem(monkeypatch):
                        _n(2, "RtlWlanu", "netrtwlanu.inf", wifi=True),
                        _n(0, "BTHUSB", "oem291.inf", problem=14)])
     res = win._verify_restore(0x0BDA, 0xC820, ["oem304.inf"], 0)
-    assert res.ok and "reboot" not in res.message.lower()
+    assert res.ok and "重启" not in res.message.lower()
 
 
 def test_verify_restore_asks_for_a_reboot_when_our_own_node_defers(monkeypatch):
     _bus(monkeypatch, [_n(None, "usbccgp", "usb.inf", problem=14)])
     res = win._verify_restore(0x0BDA, 0xC820, ["oem304.inf"], 0)
-    assert res.ok and "reboot" in res.message.lower()
+    assert res.ok and "重启" in res.message.lower()
 
 
 def test_verify_restore_passes_a_clean_release(monkeypatch):

@@ -9,6 +9,7 @@ from dataclasses import replace
 
 import pytest
 import pytest_asyncio
+from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.screen import Screen
 
@@ -132,7 +133,7 @@ async def test_header_reserves_room_for_the_sort_indicator(table):
     table, pilot = table
     table.set_rows([_row(0, identity="")])
     identity = COLUMNS[-1]
-    assert table._widths[-1] == len(identity.label) + 2
+    assert table._widths[-1] == Text(identity.label).cell_len + 2
 
 
 # ----- Cache honesty ---------------------------------------------------------

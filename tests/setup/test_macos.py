@@ -32,7 +32,7 @@ async def test_macos_install_shows_the_noop_status():
     prompter = _FakePrompter()
     prompter.status = seen.append
     await SetupMacOS().install(_DEV, prompter)
-    assert "no driver setup" in seen[0]
+    assert "无需驱动设置" in seen[0]
 
 
 async def test_macos_uninstall_reports_nothing_to_remove():

@@ -90,23 +90,23 @@ _PAD_RATE = 0.4
 _PBC_RETRY_COOLDOWN_S = 3.0
 
 _ATTACK_BUTTONS = [
-    ("btn-decloak", "Decloak"),
-    ("btn-gen-ivs", "ARP Replay"), ("btn-chop", "ChopChop"), ("btn-deauth", "AutoDeauth"),
-    ("btn-pmkid", "PMKID"), ("btn-wps-pin", "WPS PIN"), ("btn-eviltwin", "EvilTwin"),
-    ("btn-stop-pbc", "Stop PBC"),
+    ("btn-decloak", "解除隐藏"),
+    ("btn-gen-ivs", "ARP 重放"), ("btn-chop", "ChopChop"), ("btn-deauth", "自动解除认证"),
+    ("btn-pmkid", "PMKID"), ("btn-wps-pin", "WPS PIN"), ("btn-eviltwin", "邪恶双胞胎"),
+    ("btn-stop-pbc", "停止 PBC"),
 ]
 
 # Static button tooltips, keyed by live label so toggled buttons get idle/run-specific tips.
 _BUTTON_TIPS = {
-    "ARP Replay": "Listen for & replay ARP packets",
-    "Stop Replay": "Stop the entire WEP campaign.",
-    "ChopChop": "Forge a replayable packet",
-    "Stop Chop": "Interrupt chopping and return to ARP replay",
-    "AutoDeauth": "De-authenticate clients 1-by-1, then de-authenticates broadcast. Loops.",
-    "PMKID": "Associate to extract PMKID\n(some APs not applicable)",
-    "WPS PIN": "PIN attacks: PixieDust, default vendor PINs, then brute-force",
-    "EvilTwin": "Punt clients onto a WPA2 twin to capture a crackable handshake",
-    "Stop EvilTwin": "Tear down the twin and return clients to the AP",
+    "ARP 重放": "监听并重放 ARP 数据包",
+    "停止重放": "停止整个 WEP 攻击任务。",
+    "ChopChop": "伪造可重放的报文",
+    "停止 ChopChop": "中断 ChopChop 并返回 ARP 重放",
+    "自动解除认证": "逐个解除客户端认证，再解除广播认证。循环执行。",
+    "PMKID": "关联以提取 PMKID\n（部分 AP 不适用）",
+    "WPS PIN": "PIN 攻击：PixieDust、厂商默认 PIN，然后暴力破解",
+    "邪恶双胞胎": "把客户端踢到 WPA2 克隆 AP，以捕获可破解的握手",
+    "停止邪恶双胞胎": "拆除克隆 AP，把客户端送回原 AP",
 }
 
 
@@ -116,7 +116,7 @@ _FILENAME_MIDDLE = re.compile(r"_[0-9a-fA-F]{2}(?:-[0-9a-fA-F]{2}){5}_\d+_")
 
 def _save_line(result) -> str:
     """Short, dim 'saved/exists: captures/<essid>_…_<kind>.<ext>' line for a save result."""
-    verb = "saved" if result.was_new else "exists"
+    verb = "已保存" if result.was_new else "已存在"
     name = result.path.name
     m = _FILENAME_MIDDLE.search(name)
     short = f"{name[:m.start()]}_…_{name[m.end():]}" if m else name
@@ -137,15 +137,15 @@ class FocusViewV2(Screen):
 
     # Attack hotkeys come from the campaign registry
     BINDINGS = [
-        Binding("escape", "go_back", "Back", show=True),
-        Binding("d", "deauth_all", "Deauth", show=True),
+        Binding("escape", "go_back", "返回", show=True),
+        Binding("d", "deauth_all", "解除认证", show=True),
         *[Binding(cls.hotkey[0], f"campaign('{cls.key}')", cls.hotkey[1], show=True)
           for cls in fm.BUTTON_CAMPAIGNS if cls.hotkey],
         Binding("c", "campaign('chop')", "ChopChop", show=True),
         Binding("w", "wps_pbc_mode", "WPS PBC", show=True),
-        Binding("s", "silence", "Silence", show=True),
-        Binding("s", "unsilence", "unSilence", show=True),
-        Binding("q", "app.quit", "Quit", show=True),
+        Binding("s", "silence", "静音", show=True),
+        Binding("s", "unsilence", "取消静音", show=True),
+        Binding("q", "app.quit", "退出", show=True),
     ]
 
     _DEAUTH_SEL_ROUNDS = 10
@@ -237,7 +237,7 @@ class FocusViewV2(Screen):
         yield Header()
         with Horizontal(id="topbar"):
             with Horizontal(id="actions"):
-                yield Button("‹ Scanner", id="back")
+                yield Button("‹ 扫描", id="back")
                 # The full attack set is composed once (hidden); refresh_buttons shows the ones that fit the target.
                 for bid, label in _ATTACK_BUTTONS:
                     btn = Button(label, id=bid, classes="attack-btn")
@@ -306,7 +306,7 @@ class FocusViewV2(Screen):
             return dict(essid="", bssid="", channel=0, power_dbm=-100, signal=None,
                         wps=False, has_m1=False, probing=False, probe_disabled=False,
                         identity="", identity_details=None)
-        essid = fm.truncate_ssid(ap.ssid) if ap.ssid else "‹hidden›"
+        essid = fm.truncate_ssid(ap.ssid) if ap.ssid else "‹隐藏›"
         rate, _ = fm.beacon_rate(ap, self._beacon_samples, time.time())
         return dict(essid=essid, bssid=ap.bssid, channel=ap.channel,
                     power_dbm=ap.signal, signal=rate,
@@ -395,7 +395,7 @@ class FocusViewV2(Screen):
                 btn.label, btn.variant = cls.idle_label, cls.idle_variant
                 btn.disabled = reason is not None
             if probing and not running:
-                btn.disabled, reason = True, "Disabled while probing"
+                btn.disabled, reason = True, "探测中已禁用"
             btn.tooltip = reason or _BUTTON_TIPS.get(str(btn.label))
         self._refresh_chop_button(ap, active, probing)
         self._refresh_stop_pbc_button(probing)
@@ -407,7 +407,7 @@ class FocusViewV2(Screen):
         chopping = wep_running and getattr(active, "chop_active", False)
         btn.display = WepCampaign.visible(ap)
         btn.disabled = not wep_running or Config.is_silenced(ap.bssid) or probing
-        btn.label = "Stop Chop" if chopping else "ChopChop"
+        btn.label = "停止 ChopChop" if chopping else "ChopChop"
         btn.variant = "warning" if chopping else "primary"
         btn.tooltip = _BUTTON_TIPS.get(str(btn.label))
 
@@ -419,7 +419,7 @@ class FocusViewV2(Screen):
             stop_pbc.display = True
             stop_pbc.disabled = stopping or probing         # already draining → no double-stop
             stop_pbc.variant = "error"
-            stop_pbc.label = "Stopping…" if stopping else "Stop PBC"
+            stop_pbc.label = "停止中…" if stopping else "停止 PBC"
         else:
             stop_pbc.display = False
 
@@ -459,12 +459,12 @@ class FocusViewV2(Screen):
         enc = fm.encryption_chip(ap)
         if ap.ssid:
             chip = f"[black bold on cyan] {escape(ap.ssid)} [/black bold on cyan]"
-            self._log(f"[bold]Target acquired:[/bold] {chip}")
+            self._log(f"[bold]已锁定目标：[/bold] {chip}")
         else:
-            self._log("[bold]Target acquired:[/bold] "
-                      "[dim italic]cloaked network (hidden SSID)[/dim italic]")
-        self._log(treelog.branch(f"[dim]Encryption:[/dim] {enc}"))
-        self._log(treelog.branch(f"[dim]BSSID:[/dim] {ap.bssid}"))
+            self._log("[bold]已锁定目标：[/bold] "
+                      "[dim italic]隐蔽网络（隐藏 SSID）[/dim italic]")
+        self._log(treelog.branch(f"[dim]加密：[/dim] {enc}"))
+        self._log(treelog.branch(f"[dim]BSSID：[/dim] {ap.bssid}"))
         if array:
             try:
                 ok = await array.set_channel(ap.channel, scan=False)
@@ -472,17 +472,17 @@ class FocusViewV2(Screen):
                 logger.exception("Focus v2 channel tune failed")
                 ok = False
             if ok:
-                self._log(treelog.leaf(f"Tuned to [cyan]channel {ap.channel}[/cyan]"))
+                self._log(treelog.leaf(f"已切换到 [cyan]信道 {ap.channel}[/cyan]"))
             else:
                 self._log(treelog.leaf(
-                    f"[yellow]Tried to tune to channel {ap.channel}[/yellow]"))
+                    f"[yellow]尝试切换到信道 {ap.channel} 但未成功[/yellow]"))
         else:
-            self._log(treelog.leaf("[yellow]no interface: passive view only[/yellow]"))
+            self._log(treelog.leaf("[yellow]无可用网卡：仅被动查看[/yellow]"))
 
         if ap.pmf_required:
-            self._log("[bold yellow]PMF Required:[/] "
-                      "AP requires [bold]Protected Management Frames[/]")
-            self._log(treelog.leaf("[italic]Deauth[/] attacks have been disabled"))
+            self._log("[bold yellow]需要 PMF：[/] "
+                      "AP 要求 [bold]受保护的管理帧[/]")
+            self._log(treelog.leaf("[italic]解除认证[/]攻击已被禁用"))
 
         self._log_persisted_history(ap)
 
@@ -492,12 +492,12 @@ class FocusViewV2(Screen):
 
         enc = (ap.encryption or "").upper()
         if enc == "WEP":
-            self._log("[bold italic]Passively listening[/bold italic] for [bold]WEP IVs[/bold]")
+            self._log("[bold italic]被动监听[/bold italic] [bold]WEP IVs[/bold]")
         elif enc not in ("OPEN", "", "WPA3 "):
             # 'Crackable' because the pipeline filters SAE-only out.
-            self._log("[bold italic]Passively listening[/bold italic] for")
-            self._log(treelog.branch("Crackable 4-Way [bold]Handshakes[/bold]"))
-            self._log(treelog.leaf("Crackable [bold]PMKIDs[/bold]"))
+            self._log("[bold italic]被动监听[/bold italic]")
+            self._log(treelog.branch("可破解的[bold]四次握手[/bold]"))
+            self._log(treelog.leaf("可破解的[bold]PMKID[/bold]"))
 
     def _log_persisted_history(self, ap) -> None:
         """On focus init, print captures/ artifacts for this AP to the log."""
@@ -507,7 +507,7 @@ class FocusViewV2(Screen):
         if not rows and not wps_progress:
             return
         if rows:
-            self._log("[bold]Existing captures[/bold] in [cyan]captures/[/cyan]:")
+            self._log("[bold]已有抓包[/bold] 在 [cyan]captures/[/cyan] 中：")
         # Pad the label column so the dates line up.
         label_w = max((len(f"{label} ({n})") for label, (_cap, n) in rows), default=0)
         for i, (label, (cap, n)) in enumerate(rows):
@@ -672,8 +672,8 @@ class FocusViewV2(Screen):
     def _log_capture_event(self, ev: CaptureEvent, ap) -> None:
         if ev.kind == CaptureKind.PMKID:
             self._log(
-                f"[black bold on green] ✓ PMKID captured [/black bold on green] "
-                f"from [bold]{short_sta(ev.client_mac)}[/bold]"
+                f"[black bold on green] ✓ 已捕获 PMKID [/black bold on green] "
+                f"来自 [bold]{short_sta(ev.client_mac)}[/bold]"
             )
             result = self.app.vault.save_pmkid(ap, ev.client_mac)
             if result is not None:
@@ -683,9 +683,9 @@ class FocusViewV2(Screen):
                 self.app.persist_config()
             method_label = DECLOAK_METHOD_LABELS.get(ev.method or "", ev.method or "?")
             self._log(
-                f"[bold]Decloaked[/bold] [cyan]{escape(ev.bssid)}[/cyan] → "
+                f"[bold]已解除隐藏[/bold] [cyan]{escape(ev.bssid)}[/cyan] → "
                 f"[green]{escape(ev.ssid or '')}[/green] "
-                f"[dim]via {method_label}[/dim]"
+                f"[dim]通过 {method_label}[/dim]"
             )
 
     def _log(self, markup: str) -> None:
@@ -737,7 +737,7 @@ class FocusViewV2(Screen):
         if self._is_probing():
             return
         if self._any_campaign_active():
-            self._log(treelog.leaf_fail("cannot probe while attacks are active"))
+            self._log(treelog.leaf_fail("攻击进行中，无法探测"))
             return
         self._probe_task = asyncio.create_task(self._run_probe(ap))
         self.refresh_buttons()
@@ -750,32 +750,32 @@ class FocusViewV2(Screen):
     async def _run_probe(self, ap: AccessPoint) -> None:
         array = self.app.array
         if not array:
-            self._log(treelog.leaf_fail("no active interface"))
+            self._log(treelog.leaf_fail("无可用网卡"))
             return
         iface = array.select_iface(ap.channel)
         if iface is None:
-            self._log(treelog.leaf_fail(f"no interface can probe CH {ap.channel}"))
+            self._log(treelog.leaf_fail(f"没有网卡能对信道 {ap.channel} 发起探测"))
             return
         label = escape(ap.ssid or ap.bssid)
         self._log(treelog.header(
-            f"[bold]Identity probe[/bold] on [cyan]{label}[/cyan] [dim](CH {ap.channel})[/dim]"
+            f"[bold]身份探测[/bold] 目标 [cyan]{label}[/cyan] [dim]（信道 {ap.channel}）[/dim]"
         ))
         try:
             async with array.claim(iface):
                 result = await probe_ap(iface, ap)
                 if result.ok:
-                    self._log(treelog.leaf_ok(f"probe matched: [bold]{escape(ap.identity.summary)}[/bold]"))
+                    self._log(treelog.leaf_ok(f"探测匹配：[bold]{escape(ap.identity.summary)}[/bold]"))
                     self._log_identity_details(ap)
                 else:
                     self._log(treelog.leaf_fail(
-                        f"identity probe failed [dim]({escape(result.detail or 'no detail')})[/dim]"
+                        f"身份探测失败 [dim]（{escape(result.detail or '无详情')}）[/dim]"
                     ))
         except asyncio.CancelledError:
-            self._log(treelog.leaf_fail("identity probe cancelled"))
+            self._log(treelog.leaf_fail("身份探测已取消"))
             raise
         except Exception as exc:
             logger.exception("Active probe failed")
-            self._log(treelog.leaf_fail(f"identity probe error: {escape(str(exc))}"))
+            self._log(treelog.leaf_fail(f"身份探测错误：{escape(str(exc))}"))
         finally:
             self._probe_task = None
             try:
@@ -791,7 +791,7 @@ class FocusViewV2(Screen):
             self._log_identity_details_text(details)
 
     def _log_identity_details_text(self, details: str) -> None:
-        self._log("[bold]Router identity[/bold]")
+        self._log("[bold]路由器身份[/bold]")
         lines = [line for line in details.splitlines() if line]
         for i, line in enumerate(lines):
             connector = treelog.leaf if i == len(lines) - 1 else treelog.branch
@@ -876,11 +876,11 @@ class FocusViewV2(Screen):
 
     def _log_pbc_status(self) -> None:
         if self.app.pbc_enabled:
-            self._log("[bold]WPS PushButton Extraction[/bold] "
-                      "[bold green]enabled[/bold green] [dim](press w to toggle)[/dim]")
+            self._log("[bold]WPS 按钮模式提取[/bold] "
+                      "[bold green]已启用[/bold green] [dim]（按 w 切换）[/dim]")
         else:
-            self._log("[bold]WPS PushButton Extraction[/bold] "
-                      "[yellow]disabled[/yellow] [dim](detect only, press w to toggle)[/dim]")
+            self._log("[bold]WPS 按钮模式提取[/bold] "
+                      "[yellow]已禁用[/yellow] [dim]（仅检测，按 w 切换）[/dim]")
 
     def action_silence(self) -> None:
         self._toggle_silence()
@@ -895,8 +895,8 @@ class FocusViewV2(Screen):
         bssid = self._target_ap.bssid.lower()
         if bssid in Config.silenced_bssids:
             Config.silenced_bssids.remove(bssid)
-            self._log("[green bold] ● AP [italic]Un[/italic]Silenced ✓[/]")
-            self._log("[dim green]" + treelog.leaf("campaigns enabled, listening for handshakes") + "[/]")
+            self._log("[green bold] ● AP 已[italic]取消[/italic]静音 ✓[/]")
+            self._log("[dim green]" + treelog.leaf("攻击任务已启用，正在监听握手") + "[/]")
         else:
             Config.silenced_bssids.append(bssid)
             self._log_silenced()
@@ -905,9 +905,9 @@ class FocusViewV2(Screen):
         self._sync_bindings()
 
     def _log_silenced(self) -> None:
-        self._log("[yellow bold] ● AP Silenced[/] [red]✗S[/]")
-        self._log("[yellow dim]" + treelog.branch("campaigns disabled, handshakes ignored.") + "[/]")
-        self._log("[yellow dim]" + treelog.leaf("press [bold]s[/bold] to unsilence.") + "[/]")
+        self._log("[yellow bold] ● AP 已静音[/] [red]✗S[/]")
+        self._log("[yellow dim]" + treelog.branch("攻击任务已禁用，忽略握手。") + "[/]")
+        self._log("[yellow dim]" + treelog.leaf("按 [bold]s[/bold] 取消静音。") + "[/]")
 
     # ----- deauth ------------------------------------------------------------
 
@@ -917,17 +917,17 @@ class FocusViewV2(Screen):
         array = self.app.array
         card = array.select_iface(ap.channel) if (ap and array) else None
         if not ap or card is None:
-            self._log("[red]✗ No target / no card on this channel. Aborting Broadcast.[/red]")
+            self._log("[red]✗ 无目标 / 此信道上无网卡。中止广播。[/red]")
             return
-        self._log("[bold]Broadcast de-auth: all clients[/bold]")
+        self._log("[bold]广播解除认证：所有客户端[/bold]")
         try:
             sent = await card.deauth_broadcast(ap.bssid, count=self._DEAUTH_BCAST_COUNT)
         except Exception as exc:
             logger.exception("Broadcast deauth crashed")
-            self._log(treelog.leaf_fail(f"Broadcast failed: {escape(str(exc))}"))
+            self._log(treelog.leaf_fail(f"广播失败：{escape(str(exc))}"))
             return
         # Broadcast frames are never ACKed: a neutral leaf (no green ✓).
-        self._log(treelog.leaf(f"sent {sent} de-auth frames [dim](AP→broadcast)[/dim]"))
+        self._log(treelog.leaf(f"已发送 {sent} 个解除认证帧 [dim]（AP→广播）[/dim]"))
 
     async def _run_deauth_selected(self, mac: str) -> None:
         """Worker: deauth a specific client (the inline ✕ that was clicked)."""
@@ -935,28 +935,28 @@ class FocusViewV2(Screen):
         array = self.app.array
         card = array.select_iface(ap.channel) if (ap and array) else None
         if not ap or card is None:
-            self._log("[red]✗ No target / no card on this channel. Aborting Deauth.[/red]")
+            self._log("[red]✗ 无目标 / 此信道上无网卡。中止解除认证。[/red]")
             return
-        self._log(f"[bold]De-authenticating Client {escape(mac)}[/bold]")
+        self._log(f"[bold]正在解除客户端 {escape(mac)} 的认证[/bold]")
         try:
             res = await card.deauth_client(ap.bssid, mac, rounds=self._DEAUTH_SEL_ROUNDS)
         except Exception as exc:
             logger.exception("Deauth %s crashed", mac)
-            self._log(treelog.leaf_fail(f"Deauth failed: {escape(str(exc))}"))
+            self._log(treelog.leaf_fail(f"解除认证失败：{escape(str(exc))}"))
             return
         self._log(treelog.branch(
-            f"sent {res.total_sent} de-auth frames "
-            f"[dim](AP↔Client ×{res.client_sent})[/dim]"))
+            f"已发送 {res.total_sent} 个解除认证帧 "
+            f"[dim]（AP↔客户端 ×{res.client_sent}）[/dim]"))
         if not res.measured:  # card lacks TX-ACK detection, nothing to confirm
-            self._log(treelog.leaf("[dim]delivery not measured (no TX-ACK on this card)[/dim]"))
+            self._log(treelog.leaf("[dim]未测量送达情况（此网卡无 TX-ACK）[/dim]"))
             return
-        detail = f"[dim](client {res.client_acks}/{res.client_sent} · AP {res.ap_acks}/{res.ap_sent})[/dim]"
+        detail = f"[dim]（客户端 {res.client_acks}/{res.client_sent} · AP {res.ap_acks}/{res.ap_sent}）[/dim]"
         if res.total_acked:
             self._log(treelog.leaf(
-                f"[bold][cyan]{res.total_acked}[/cyan]/{res.total_sent} de-auths ACK'd[/bold] {detail}"))
+                f"[bold][cyan]{res.total_acked}[/cyan]/{res.total_sent} 个解除认证帧已 ACK[/bold] {detail}"))
         else:
             self._log(treelog.leaf(
-                f"[bold][red]0[/red]/{res.total_sent} de-auths ACK'd[/bold] [dim](silent AP & client)[/dim]"))
+                f"[bold][red]0[/red]/{res.total_sent} 个解除认证帧已 ACK[/bold] [dim]（AP 与客户端均静默）[/dim]"))
 
     # ----- PMKID -------------------------------------------------------------
 
@@ -972,7 +972,7 @@ class FocusViewV2(Screen):
         ap = self._target_ap
         array = self.app.array
         if not ap or not array:
-            self._log("[red]✗ No target / interface. Aborting decloak.[/red]")
+            self._log("[red]✗ 无目标 / 无网卡。中止解除隐藏。[/red]")
             return
         self.app.push_screen(DecloakInputModal(ap.bssid, named_sibling_ssid(array, ap)),
                              self._on_decloak_input)
@@ -985,17 +985,17 @@ class FocusViewV2(Screen):
         ap = self._target_ap
         array = self.app.array
         if not ap or not array:
-            self._log("[red]✗ No target / interface. Aborting decloak.[/red]")
+            self._log("[red]✗ 无目标 / 无网卡。中止解除隐藏。[/red]")
             return
         if not ap.is_hidden:
-            self._log(treelog.branch("SSID was revealed while the dialog was open"))
+            self._log(treelog.branch("对话框打开期间 SSID 已被揭示"))
             self.refresh_buttons()
             return
-        self._log(treelog.header(f"Decloaking {escape(ap.bssid)}"))
+        self._log(treelog.header(f"正在解除隐藏 {escape(ap.bssid)}"))
         started = self._controls.start(DecloakCampaign, array, ap, decloak_input=chosen,
                                        log=lambda m: self._log(treelog.branch(m)))
         if started is None:
-            self._log(treelog.branch("another campaign owns the radio"))
+            self._log(treelog.branch("另一个攻击任务占用了射频"))
         self.refresh_buttons()
 
     def _toggle_pmkid(self) -> None:
@@ -1010,7 +1010,7 @@ class FocusViewV2(Screen):
         ap = self._target_ap
         array = self.app.array
         if not ap or not array:
-            self._log("[red]✗ No target / interface. Aborting PMKID harvest.[/red]")
+            self._log("[red]✗ 无目标 / 无网卡。中止 PMKID 收集。[/red]")
             return
         self._log(pmkid_log.header(escape(ap.ssid or ap.bssid)))
         self._controls.start(PmkidHarvestAttack, array, ap,
@@ -1018,11 +1018,11 @@ class FocusViewV2(Screen):
 
     def _finish_decloak(self, camp) -> None:
         if camp.revealed:
-            self._log(treelog.leaf_ok(f"revealed [bold]{escape(camp.revealed)}[/bold]"))
+            self._log(treelog.leaf_ok(f"已揭示 [bold]{escape(camp.revealed)}[/bold]"))
             if Config.remember_decloak(camp.ap.bssid, camp.revealed):
                 self.app.persist_config()
         else:
-            self._log(treelog.leaf_fail(f"no match in {camp.sent} guesses"))
+            self._log(treelog.leaf_fail(f"在 {camp.sent} 次猜测中未找到匹配"))
 
     def _finish_pmkid(self, camp) -> None:
         """Handle a completed harvest."""
@@ -1032,11 +1032,11 @@ class FocusViewV2(Screen):
             self._emit_lines(pmkid_log.verdict_success(hint))
             # Detector skips forged MACs, so toast the active-harvest win here too.
             name = camp.target.ssid or camp.target.bssid
-            body = (f"[bold]{escape(name)}[/bold] on channel [bold]{camp.target.channel}[/bold] "
-                    f"[dim bold](BSSID: {escape(camp.target.bssid)})[/dim bold]")
+            body = (f"[bold]{escape(name)}[/bold] 在信道 [bold]{camp.target.channel}[/bold] "
+                    f"[dim bold]（BSSID：{escape(camp.target.bssid)}）[/dim bold]")
             self.notify(body, title=f"{CAPTURE_TOAST_TITLES[CaptureKind.PMKID]} (M1)", timeout=6)
         elif getattr(camp, "stopped", False):
-            self._log(treelog.leaf_fail("[bright_red bold]Stopped harvest[/]"))
+            self._log(treelog.leaf_fail("[bright_red bold]已停止收集[/]"))
         else:
             self._emit_lines(pmkid_log.verdict_failure(camp.fail_reason))
 
@@ -1054,19 +1054,19 @@ class FocusViewV2(Screen):
         ap = self._target_ap
         array = self.app.array
         if not ap or not array:
-            self._log("[red]✗ No target / interface. Aborting Deauth.[/red]")
+            self._log("[red]✗ 无目标 / 无网卡。中止解除认证。[/red]")
             return
-        self._log(f"[bold]Deauth[/bold] of [bold]{escape(ap.ssid or ap.bssid)}[/bold]: "
-                  "forcing a re-handshake")
+        self._log(f"[bold]解除认证[/bold] 目标 [bold]{escape(ap.ssid or ap.bssid)}[/bold]： "
+                  "强制重新握手")
         self._controls.start(DeauthCampaign, array, ap, log=self._log)
 
     def _finish_deauth(self, camp) -> None:
         """Reap a completed deauth run. A captured handshake is saved+toasted by the
         always-on capture path (CaptureKind.HANDSHAKE); we only log the campaign's end."""
         if camp.captured:
-            self._log("[bold green]✓ Deauth provoked a crackable handshake[/bold green]")
+            self._log("[bold green]✓ 解除认证已触发可破解的握手[/bold green]")
         else:
-            self._log("[bright_red bold]Deauth stopped[/]")
+            self._log("[bright_red bold]解除认证已停止[/]")
 
     # ----- EvilTwin ----------------------------------------------------------
 
@@ -1082,14 +1082,14 @@ class FocusViewV2(Screen):
         ap = self._target_ap
         array = self.app.array
         if not ap or not array or not array.members:
-            self._log("[red]✗ No target / interface. Cannot start EvilTwin.[/red]")
+            self._log("[red]✗ 无目标 / 无网卡。无法启动 EvilTwin。[/red]")
             return
         # Every member here is FAKE_MAC=NONE/UNIMPLEMENTED, so the modal's host Select
         # would be built empty and raise EmptySelectError at compose. Guarding on members
         # alone left the button live but the campaign unstartable -- a crash, not a no-op.
         if not any(_can_host(m) for m in array.members):
-            self._log("[red]✗ No interface can spoof a MAC, so none can host the twin."
-                      " EvilTwin needs a SPOOFABLE or FIXED_MAC card.[/red]")
+            self._log("[red]✗ 没有网卡能伪造 MAC，因此无法承载克隆 AP。"
+                      "EvilTwin 需要 SPOOFABLE 或 FIXED_MAC 网卡。[/red]")
             return
         self.app.push_screen(EvilTwinInputModal(ap, array.members), self._on_eviltwin_input)
 
@@ -1105,23 +1105,23 @@ class FocusViewV2(Screen):
             started = self._controls.start(EvilTwinCampaign, array, ap, evil_input=evil_input)
         except Exception as exc:
             logger.exception("EvilTwin start failed")
-            self._log(f"[bold red]✗ EvilTwin failed to start:[/bold red] {escape(str(exc))}")
+            self._log(f"[bold red]✗ EvilTwin 启动失败：[/bold red] {escape(str(exc))}")
             return
         if started is None:
             return
-        self._log(f"[bold cyan]EvilTwin[/bold cyan] of [bold cyan]"
-                  f"{escape(ap.ssid or ap.bssid)}[/bold cyan] active on ch {evil_input.twin_channel}"
-                  f" [dim]({evil_input.twin_bssid})[/dim]")
-        self._log(treelog.branch(f"[italic]punting clients[/italic] [dim]on[/dim] ch {ap.channel}"))
-        self._log(treelog.leaf("[dim]waiting for clients to auth…[/dim]"))
+        self._log(f"[bold cyan]EvilTwin[/bold cyan] 目标 [bold cyan]"
+                  f"{escape(ap.ssid or ap.bssid)}[/bold cyan] 已在信道 {evil_input.twin_channel} 启用"
+                  f" [dim]（{evil_input.twin_bssid}）[/dim]")
+        self._log(treelog.branch(f"[italic]踢出客户端[/italic] [dim]于[/dim] 信道 {ap.channel}"))
+        self._log(treelog.leaf("[dim]等待客户端认证…[/dim]"))
         self.refresh_buttons()
 
     def _finish_eviltwin(self, camp) -> None:
         """Reap a finished EvilTwin (user-stopped, or captured and released the radio itself)."""
         if camp.captured:
-            self._log("[bold green]✓ EvilTwin captured a crackable handshake[/bold green]")
+            self._log("[bold green]✓ EvilTwin 捕获到可破解的握手[/bold green]")
         else:
-            self._log("[bold red]EvilTwin stopped[/bold red]")
+            self._log("[bold red]EvilTwin 已停止[/bold red]")
 
     # ----- WEP: Generate IVs (Replay) + Chop ---------------------------------
 
@@ -1141,13 +1141,13 @@ class FocusViewV2(Screen):
         ap = self._target_ap
         array = self.app.array
         if not ap or not array:
-            self._log("[red]✗ No target / interface. Cannot Generate IVs.[/red]")
+            self._log("[red]✗ 无目标 / 无网卡。无法生成 IV。[/red]")
             return
         try:
             self._controls.start(WepCampaign, array, ap, log=self._log)
         except Exception as exc:
             logger.exception("Generate IVs start failed")
-            self._log(f"[bold red]✗ Generate IVs failed to start:[/bold red] {escape(str(exc))}")
+            self._log(f"[bold red]✗ 生成 IV 启动失败：[/bold red] {escape(str(exc))}")
 
     def _finish_wep(self, camp) -> None:
         if camp.recovered_key is not None:
@@ -1158,12 +1158,12 @@ class FocusViewV2(Screen):
     def _toggle_chop(self) -> None:
         camp = self._controls.current
         if camp is None or camp.key != "wep":
-            self._log("[yellow]Start Replay first[/yellow] [dim](ChopChop "
-                      "manufactures an ARP seed for the replay engine)[/dim]")
+            self._log("[yellow]请先开始重放[/yellow] [dim]（ChopChop "
+                      "为重放引擎生成 ARP 种子）[/dim]")
             return
         if camp.chop_active:
             camp.stop_chop()
-            self._log("[cyan]→ Chop stopped[/cyan] [dim](back to ARP replay)[/dim]")
+            self._log("[cyan]→ ChopChop 已停止[/cyan] [dim]（返回 ARP 重放）[/dim]")
         else:
             camp.start_chop()
         self.refresh_buttons()
@@ -1182,7 +1182,7 @@ class FocusViewV2(Screen):
         ap = self._target_ap
         array = self.app.array
         if not ap or not array:
-            self._log("[red]✗ No target / pool. Cannot start WPS PIN.[/red]")
+            self._log("[red]✗ 无目标 / 无网卡池。无法启动 WPS PIN。[/red]")
             return
         # Warn when the elected card can't HW-ACK a spoofed MAC (still runs PIN fine, just spammy).
         card = array.select_iface(ap.channel)
@@ -1195,12 +1195,12 @@ class FocusViewV2(Screen):
     def _launch_wps_pin(self, ap, array) -> None:
         try:
             name = escape(ap.ssid or ap.bssid)
-            self._log(f"[bold]WPS PIN brute[/bold] started on [bold cyan]{name}[/bold cyan]")
+            self._log(f"[bold]WPS PIN 暴力破解[/bold] 已在 [bold cyan]{name}[/bold cyan] 上启动")
             self._controls.start(WpsCampaign, array, ap,
                                  log=lambda m: self._log(treelog.branch(m)))
         except Exception as exc:
             logger.exception("WPS PIN start failed")
-            self._log(f"[bold red]✗ WPS PIN failed to start:[/bold red] {escape(str(exc))}")
+            self._log(f"[bold red]✗ WPS PIN 启动失败：[/bold red] {escape(str(exc))}")
 
     def _finish_wps(self, camp) -> None:
         """Reap a finished WPS PIN sweep: log/save the found PIN, else the give-up reason."""
@@ -1210,27 +1210,27 @@ class FocusViewV2(Screen):
             camp.target.wps_pin_psk = camp.state.found_psk
             displayed_pin = camp.state.found_pin or EMPTY_PIN_LABEL
             self._log(treelog.branch_ok(
-                f"[black bold on cyan]  WPS PIN for {ssid}: "
+                f"[black bold on cyan]  {ssid} 的 WPS PIN： "
                 f"{escape(displayed_pin)}  [/black bold on cyan]"))
             self._log(treelog.branch(
-                f"[black bold on green] Password for {ssid}: "
+                f"[black bold on green] {ssid} 的密码： "
                 f"\"{escape(camp.state.found_psk or '')}\" [/black bold on green]"))
             try:
                 result = self.app.vault.save_wps_pin(
                     camp.target, camp.state.found_pin, camp.state.found_psk or "")
                 if result is None:
-                    self._log(treelog.leaf("[dim](save failed)[/dim]"))
+                    self._log(treelog.leaf("[dim]（保存失败）[/dim]"))
                 else:
                     self._log(treelog.leaf(_save_line(result)))
             except Exception:
-                self._log(treelog.leaf("[dim](save failed)[/dim]"))
+                self._log(treelog.leaf("[dim]（保存失败）[/dim]"))
         elif getattr(camp, "fail_reason", None):
             self._log(treelog.leaf_fail(
-                f"[bold red]giving up:[/bold red] [yellow]{escape(camp.fail_reason)}[/yellow]"))
+                f"[bold red]放弃：[/bold red] [yellow]{escape(camp.fail_reason)}[/yellow]"))
         else:
             self._log(treelog.leaf(
-                f"[yellow]WPS PIN stopped[/yellow] "
-                f"[dim]({camp.state.tested} tested, phase {camp.state.phase})[/dim]"))
+                f"[yellow]WPS PIN 已停止[/yellow] "
+                f"[dim]（已测试 {camp.state.tested}，阶段 {camp.state.phase}）[/dim]"))
 
     # ----- WPS PBC auto-capture ----------------------------------------------
 
@@ -1238,8 +1238,8 @@ class FocusViewV2(Screen):
         array = self.app.array
         if not array:
             return
-        self._log("[bold cyan]WPS PushButton:[/bold cyan] [bold green]Window Open[/bold green] "
-                  "(auto-capturing PSK)")
+        self._log("[bold cyan]WPS 按钮模式：[/bold cyan] [bold green]时间窗口已打开[/bold green] "
+                  "（自动捕获 PSK）")
         self._controls.start(WpsPbcCapture, array, ap,
                              log=lambda m: self._log(treelog.branch(m)))
 
@@ -1248,11 +1248,11 @@ class FocusViewV2(Screen):
         ap = camp.target
         if getattr(camp, "stopped", False):
             self._log(treelog.leaf(
-                "[yellow]stopped[/yellow] [dim](radio freed; auto-invade resumes on "
-                "the next window)[/dim]"))
+                "[yellow]已停止[/yellow] [dim]（已释放射频；自动接管将在"
+                "下一个时间窗口恢复）[/dim]"))
             return
         if camp.error is not None:
-            self._log(treelog.leaf_fail(f"capture error: {escape(str(camp.error))}"))
+            self._log(treelog.leaf_fail(f"抓包错误：{escape(str(camp.error))}"))
             return
         outcome = camp.outcome
         if outcome is None:
@@ -1261,21 +1261,21 @@ class FocusViewV2(Screen):
             ap.wps_pbc_psk = outcome.psk
             name = escape(outcome.ssid or ap.ssid or ap.bssid)
             self._log(treelog.branch(
-                f"[black bold on green] Password for {name}: "
+                f"[black bold on green] {name} 的密码： "
                 f"\"{escape(outcome.psk)}\" [/black bold on green]"))
             try:
                 result = self.app.vault.save_wps_pbc(ap, outcome.psk)
                 if result is None:
-                    self._log(treelog.leaf("[dim](save failed)[/dim]"))
+                    self._log(treelog.leaf("[dim]（保存失败）[/dim]"))
                 else:
                     self._log(treelog.leaf(_save_line(result)))
             except Exception:
-                self._log(treelog.leaf("[dim](save failed)[/dim]"))
+                self._log(treelog.leaf("[dim]（保存失败）[/dim]"))
         else:
             self._pbc_retry_after = time.monotonic() + _PBC_RETRY_COOLDOWN_S
             self._log(treelog.leaf_warn(
-                f"{outcome.result.value} [dim]({escape(outcome.detail)})[/dim], "
-                f"retrying in {_PBC_RETRY_COOLDOWN_S:.0f}s while the window's open"))
+                f"{outcome.result.value} [dim]（{escape(outcome.detail)}）[/dim]，"
+                f"将在 {_PBC_RETRY_COOLDOWN_S:.0f} 秒后重试，只要时间窗口仍打开"))
 
     def _user_stop_pbc(self) -> None:
         """The transient 'Stop PBC' button."""

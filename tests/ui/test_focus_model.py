@@ -111,7 +111,7 @@ def test_headline_persisted_wep_idle_shows_recovered(tmp_path):
     """A prior-session WEP key on disk, no campaign → the recovered-key banner."""
     _seed_wep(tmp_path, "aa-bb-cc-dd-ee-ff")
     h = _headline(_wep_ap())
-    assert "WEP key recovered" in h[0]
+    assert "已恢复 WEP 密钥" in h[0]
 
 
 def test_headline_active_campaign_outranks_recovered_key():
@@ -122,8 +122,8 @@ def test_headline_active_campaign_outranks_recovered_key():
     Campaign.active = _FakeWep(replay_state="replaying", target=ap)
     h = _headline(ap)
     joined = " ".join(h)
-    assert "Replaying" in h[0]
-    assert "recovered" not in joined.lower()
+    assert "重放 ARP" in h[0]
+    assert "已恢复" not in joined
     assert "1,234" in joined
 
 
@@ -140,13 +140,13 @@ def test_headline_sae_pmkid_is_not_a_captured_win():
     """A WPA3/SAE PMKID lands on the handshake but save_pmkid withholds it, so the
     headline must NOT claim 'Captured … saved' (the false-save bug)."""
     joined = " ".join(_headline(_pmkid_ap(pmkid_akm=8)))
-    assert "Captured" not in joined and "PMKID ×" not in joined
-    assert "saved to captures/" not in joined
+    assert "已捕获" not in joined and "PMKID ×" not in joined
+    assert "已保存到" not in joined
 
 
 def test_headline_psk_pmkid_is_a_captured_win():
     joined = " ".join(_headline(_pmkid_ap(pmkid_akm=2)))
-    assert "Captured" in joined and "PMKID ×1" in joined
+    assert "已捕获" in joined and "PMKID ×1" in joined
 
 
 def test_headline_chop_and_crack_states():
@@ -156,7 +156,7 @@ def test_headline_chop_and_crack_states():
     assert "ChopChop" in chop[0]
     Campaign.active = _FakeWep(cracker_samples=CRACK_READY_THRESHOLD)
     cracking = _headline(ap)
-    assert "Cracking" in cracking[0]
+    assert "破解中" in cracking[0]
 
 
 def test_headline_cracking_names_the_concurrent_tx_action():
@@ -166,13 +166,13 @@ def test_headline_cracking_names_the_concurrent_tx_action():
     crk = CRACK_READY_THRESHOLD
     Campaign.active = _FakeWep(cracker_samples=crk, replay_state="replaying")
     replaying = _headline(ap)
-    assert "Replaying ARP" in replaying[0] and "Cracking" in replaying[0]
+    assert "重放 ARP" in replaying[0] and "破解中" in replaying[0]
     Campaign.active = _FakeWep(cracker_samples=crk, replay_state="waiting-arp")
     waiting = _headline(ap)
-    assert "Waiting for a packet" in waiting[0] and "Cracking" in waiting[0]
+    assert "等待数据包" in waiting[0] and "破解中" in waiting[0]
     Campaign.active = _FakeWep(chop=True, cracker_samples=crk)
     chopping = _headline(ap)
-    assert "Chopping a packet" in chopping[0] and "Cracking" in chopping[0]
+    assert "切割数据包" in chopping[0] and "破解中" in chopping[0]
 
 
 
@@ -182,29 +182,29 @@ def test_headline_recovered_wps_psk_shows_banner():
     """A recovered WPS PSK (PBC or PIN, after the campaign is torn down) shows a
     terminal banner instead of decaying back to 'Listening'."""
     h = _headline(_wpa_ap(wps_pbc_psk="hunter2"))
-    assert "PSK recovered" in h[0]
+    assert "已恢复 PSK" in h[0]
 
 
 def test_headline_listening_when_no_psk():
     h = _headline(_wpa_ap())
-    assert "Listening for handshake" in h[0]
+    assert "正在监听握手" in h[0]
 
 
 def test_headline_live_pbc_outranks_listening():
     Campaign.active = _FakePbc()
     h = _headline(_wpa_ap())
-    assert "PushButton" in h[0] and "capturing" in h[0].lower()
+    assert "按钮模式" in h[0] and "捕获" in h[0]
 
 
 def test_headline_wps_pin_found_while_held_then_psk_after_teardown():
     # Campaign still held with a found PIN → cracked banner.
     Campaign.active = _FakeWps(found_pin="12345670")
     held = _headline(_wpa_ap())
-    assert "WPS PIN cracked" in held[0]
+    assert "WPS PIN 已破解" in held[0]
     # After teardown the PSK lives on the AP → recovered banner (not Listening).
     Campaign.active = None
     after = _headline(_wpa_ap(wps_pbc_psk="hunter2"))
-    assert "PSK recovered" in after[0]
+    assert "已恢复 PSK" in after[0]
 
 
 def _iface_with_usable(n):
@@ -217,7 +217,7 @@ def test_wep_status_lines_idle_is_one_line_usable_only():
     ap = types.SimpleNamespace(bssid="aa:bb:cc:dd:ee:ff")
     lines = fm.wep_status_lines(ap, _iface_with_usable(0), None, 0)
     assert len(lines) == 1
-    assert "Usable IVs:" in lines[0] and "[red]0[/red]" in lines[0]
+    assert "可用 IV：" in lines[0] and "[red]0[/red]" in lines[0]
 
 
 def test_wep_status_lines_campaign_splits_fakeauth_and_ivs():
@@ -228,8 +228,8 @@ def test_wep_status_lines_campaign_splits_fakeauth_and_ivs():
         state="associated", next_reauth_at=0, fail_reason=None))
     lines = fm.wep_status_lines(ap, _iface_with_usable(1234), camp, 0)
     assert len(lines) == 2
-    assert "Fake-Auth:" in lines[0] and "Associated" in lines[0]
-    assert "[cyan]1,234[/cyan]" in lines[1] and "Usable IVs:" in lines[1]
+    assert "伪认证：" in lines[0] and "已关联" in lines[0]
+    assert "[cyan]1,234[/cyan]" in lines[1] and "可用 IV：" in lines[1]
 
 
 def test_wep_status_lines_drops_threshold_once_crossed():
@@ -261,16 +261,16 @@ def _rsn_ap(*, encryption="WPA2", akms=("PSK",), wpa3=False, transition_mode=Fal
 
 
 def test_pmf_status_markup_gradient():
-    assert fm.pmf_status_markup(_rsn_ap(pmf_required=True, pmf_capable=True)) == "[red]Required[/red]"
+    assert fm.pmf_status_markup(_rsn_ap(pmf_required=True, pmf_capable=True)) == "[red]必需[/red]"
     assert "dark_orange" in fm.pmf_status_markup(_rsn_ap(pmf_capable=True))
-    assert fm.pmf_status_markup(_rsn_ap()) == "[dim]Disabled[/dim]"
+    assert fm.pmf_status_markup(_rsn_ap()) == "[dim]已禁用[/dim]"
 
 
 def test_status_footer_wpa_shows_encryption_and_pmf():
     lines = fm.status_under_dash(_rsn_ap(pmf_required=True, pmf_capable=True), None, 0)
     assert len(lines) == 2
-    assert "Encryption:" in lines[0] and "WPA2" in lines[0]
-    assert "PMF:" in lines[1] and "Required" in lines[1]
+    assert "加密：" in lines[0] and "WPA2" in lines[0]
+    assert "PMF：" in lines[1] and "必需" in lines[1]
     assert "Protected Mgmt Frames" not in lines[1]      # abbreviated
 
 
@@ -278,7 +278,7 @@ def test_status_footer_combines_pmf_and_wps():
     """WPS rejoins the footer (it was dropped in v2) on the same row as PMF."""
     lines = fm.status_under_dash(_rsn_ap(wps=True, wps_version="1.0"), None, 0)
     assert len(lines) == 2
-    assert "PMF:" in lines[1] and "WPS:" in lines[1] and "1.0" in lines[1]
+    assert "PMF：" in lines[1] and "WPS：" in lines[1] and "1.0" in lines[1]
 
 
 def test_router_identity_details_shows_source_provenance():
@@ -288,8 +288,8 @@ def test_router_identity_details_shows_source_provenance():
     details = fm.router_identity_details(ap)
     assert details is not None
     assert "[bold]MikroTik hAP ac²[/bold]" in details
-    assert "[dim]Model:[/dim] hAP ac² [dim](WSC Beacon)[/dim]" in details
-    assert "[dim]Manufacturer:[/dim] MikroTik [dim](WSC Beacon)[/dim]" in details
+    assert "[dim]型号：[/dim] hAP ac² [dim](WSC Beacon)[/dim]" in details
+    assert "[dim]厂商：[/dim] MikroTik [dim](WSC Beacon)[/dim]" in details
 
 
 def test_router_identity_details_can_show_m1_and_oui_separately():
@@ -300,9 +300,9 @@ def test_router_identity_details_can_show_m1_and_oui_separately():
     details = fm.router_identity_details(ap)
     assert details is not None
     assert "[bold]Cisco AP-500[/bold]" in details
-    assert "[dim]Model:[/dim] AP-500 [dim](WSC M1)[/dim]" in details
-    assert "[dim]Manufacturer:[/dim] Cisco [dim](WSC M1)[/dim]" in details
-    assert "[dim]IEEE OUI:[/dim] Apple" in details
+    assert "[dim]型号：[/dim] AP-500 [dim](WSC M1)[/dim]" in details
+    assert "[dim]厂商：[/dim] Cisco [dim](WSC M1)[/dim]" in details
+    assert "[dim]IEEE OUI：[/dim] Apple" in details
 
 
 def test_router_identity_details_asus_wsc_beacon():
@@ -314,9 +314,9 @@ def test_router_identity_details_asus_wsc_beacon():
 
     assert fm.router_identity_details(ap) == "\n".join([
         "[bold]ASUS RT-AC66U[/bold]",
-        "[dim]Model:[/dim] RT-AC66U [dim](WSC Beacon)[/dim]",
-        "[dim]Manufacturer:[/dim] ASUS [dim](WSC Beacon)[/dim]",
-        "[dim]IEEE OUI:[/dim] ASUS",
+        "[dim]型号：[/dim] RT-AC66U [dim](WSC Beacon)[/dim]",
+        "[dim]厂商：[/dim] ASUS [dim](WSC Beacon)[/dim]",
+        "[dim]IEEE OUI：[/dim] ASUS",
     ])
 
 
@@ -329,9 +329,9 @@ def test_router_identity_details_netgear_wsc_m1():
 
     assert fm.router_identity_details(ap) == "\n".join([
         "[bold]Netgear C3700-100NAS[/bold]",
-        "[dim]Model:[/dim] C3700-100NAS [dim](WSC M1)[/dim]",
-        "[dim]Manufacturer:[/dim] Netgear [dim](WSC M1)[/dim]",
-        "[dim]IEEE OUI:[/dim] Netgear",
+        "[dim]型号：[/dim] C3700-100NAS [dim](WSC M1)[/dim]",
+        "[dim]厂商：[/dim] Netgear [dim](WSC M1)[/dim]",
+        "[dim]IEEE OUI：[/dim] Netgear",
     ])
 
 
@@ -344,9 +344,9 @@ def test_router_identity_details_odm_wsc_beacon_with_branded_oui():
 
     assert fm.router_identity_details(ap) == "\n".join([
         "[bold]Jensen of Scandinavia Air:Link 5000AC[/bold]",
-        "[dim]Model:[/dim] Jensen of Scandinavia Air:Link 5000AC [dim](WSC Beacon)[/dim]",
-        "[dim]Manufacturer:[/dim] Jensen [dim](IEEE OUI)[/dim]",
-        "[dim]Chipset:[/dim] Ralink [dim](WSC)[/dim]",
+        "[dim]型号：[/dim] Jensen of Scandinavia Air:Link 5000AC [dim](WSC Beacon)[/dim]",
+        "[dim]厂商：[/dim] Jensen [dim](IEEE OUI)[/dim]",
+        "[dim]芯片组：[/dim] Ralink [dim](WSC)[/dim]",
     ])
 
 
@@ -359,9 +359,9 @@ def test_router_identity_details_includes_device_type():
     details = fm.router_identity_details(ap)
     assert details == "\n".join([
         "[bold]HP OfficeJet Pro (printer)[/bold]",
-        "[dim]Model:[/dim] OfficeJet Pro [dim](WSC M1)[/dim]",
-        "[dim]Manufacturer:[/dim] HP [dim](WSC M1)[/dim]",
-        "[dim]Device Type:[/dim] printer [dim](WSC M1)[/dim]",
+        "[dim]型号：[/dim] OfficeJet Pro [dim](WSC M1)[/dim]",
+        "[dim]厂商：[/dim] HP [dim](WSC M1)[/dim]",
+        "[dim]设备类型：[/dim] printer [dim](WSC M1)[/dim]",
     ])
 
 
@@ -374,7 +374,7 @@ def test_status_footer_open_is_encryption_only():
         encryption="OPEN", akms=[], pairwise_cipher=None, wpa3=False,
         transition_mode=False, wep=None, pmf_required=False, pmf_capable=False, bssid="x")
     lines = fm.status_under_dash(ap, None, 0)
-    assert len(lines) == 1 and "Encryption:" in lines[0]
+    assert len(lines) == 1 and "加密：" in lines[0]
 
 
 def test_status_footer_wep_is_fakeauth_and_usable_ivs():
@@ -382,8 +382,8 @@ def test_status_footer_wep_is_fakeauth_and_usable_ivs():
         encryption="WEP", akms=[], pairwise_cipher=None, wpa3=False,
         transition_mode=False, wep=types.SimpleNamespace(unique_ivs=0), bssid="x")
     lines = fm.status_under_dash(ap, _iface_with_usable(5), 0)
-    assert any("Usable IVs" in ln for ln in lines)
-    assert not any("Encryption:" in ln for ln in lines)
+    assert any("可用 IV" in ln for ln in lines)
+    assert not any("加密：" in ln for ln in lines)
 
 
 def _wep_btn_ap():
@@ -443,19 +443,19 @@ async def test_derive_buttons_wep_labels_and_variants(buttons_screen):
     """Idle = ARP Replay (green) / ChopChop (blue, disabled until a campaign);
     running = Stop Replay (red) / Stop Chop (orange)."""
     idle = _buttons(buttons_screen, _wep_btn_ap())
-    assert str(idle["btn-gen-ivs"].label) == "ARP Replay" and idle["btn-gen-ivs"].variant == "success"
+    assert str(idle["btn-gen-ivs"].label) == "ARP 重放" and idle["btn-gen-ivs"].variant == "success"
     assert str(idle["btn-chop"].label) == "ChopChop" and idle["btn-chop"].disabled is True
     Campaign.active = _FakeWep(chop=True)
     run = _buttons(buttons_screen, _wep_btn_ap())
-    assert str(run["btn-gen-ivs"].label) == "Stop Replay" and run["btn-gen-ivs"].variant == "error"
-    assert str(run["btn-chop"].label) == "Stop Chop" and run["btn-chop"].variant == "warning"
+    assert str(run["btn-gen-ivs"].label) == "停止重放" and run["btn-gen-ivs"].variant == "error"
+    assert str(run["btn-chop"].label) == "停止 ChopChop" and run["btn-chop"].variant == "warning"
 
 
 @pytest.mark.asyncio(loop_scope="module")
 async def test_buttons_wpa2_psk_no_wps_pmkid_and_deauth_visible(buttons_screen):
     b = _buttons(buttons_screen, _rsn_ap(akms=("PSK",), wps=False))
     assert _bs(b["btn-pmkid"]) == (True, False, "PMKID", "primary")
-    assert _bs(b["btn-deauth"]) == (True, False, "AutoDeauth", "primary")
+    assert _bs(b["btn-deauth"]) == (True, False, "自动解除认证", "primary")
     assert b["btn-wps-pin"].display is False
     assert b["btn-gen-ivs"].display is False and b["btn-chop"].display is False
 
@@ -491,11 +491,11 @@ async def test_buttons_hidden_ssid_disables_assoc_attacks(buttons_screen):
     visible-but-disabled with a hidden-SSID reason: PMKID, WPS PIN, WEP fake-auth."""
     ap = _rsn_ap(akms=("PSK",), wps=True, ssid=None)
     b = _buttons(buttons_screen, ap)
-    assert b["btn-pmkid"].disabled is True and "hidden" in fm.campaign_blocked(PmkidHarvestAttack, ap)
-    assert b["btn-wps-pin"].disabled is True and "hidden" in fm.campaign_blocked(WpsCampaign, ap)
+    assert b["btn-pmkid"].disabled is True and "隐藏" in fm.campaign_blocked(PmkidHarvestAttack, ap)
+    assert b["btn-wps-pin"].disabled is True and "隐藏" in fm.campaign_blocked(WpsCampaign, ap)
     wap = _wep_hidden_ap()
     wb = _buttons(buttons_screen, wap)
-    assert wb["btn-gen-ivs"].disabled is True and "hidden" in fm.campaign_blocked(WepCampaign, wap)
+    assert wb["btn-gen-ivs"].disabled is True and "隐藏" in fm.campaign_blocked(WepCampaign, wap)
 
 
 @pytest.mark.asyncio(loop_scope="module")
@@ -528,9 +528,9 @@ async def test_buttons_mutex_running_wps_disables_siblings(buttons_screen):
     ap = _rsn_ap(wpa3=True, transition_mode=True, wps=True)
     Campaign.active = _FakeWps()
     b = _buttons(buttons_screen, ap)
-    assert _bs(b["btn-wps-pin"]) == (True, False, "Stop PIN", "error")
+    assert _bs(b["btn-wps-pin"]) == (True, False, "停止 PIN", "error")
     assert b["btn-pmkid"].disabled is True               # radio owned by WPS
-    assert _bs(b["btn-eviltwin"]) == (True, True, "EvilTwin", "primary")
+    assert _bs(b["btn-eviltwin"]) == (True, True, "邪恶双胞胎", "primary")
 
 
 @pytest.mark.asyncio(loop_scope="module")
@@ -538,7 +538,7 @@ async def test_buttons_running_eviltwin_toggles_and_blocks_pmkid(buttons_screen)
     ap = _rsn_ap(wpa3=True, transition_mode=True)
     Campaign.active = _FakeEvilTwin()
     b = _buttons(buttons_screen, ap)
-    assert _bs(b["btn-eviltwin"]) == (True, False, "Stop EvilTwin", "error")
+    assert _bs(b["btn-eviltwin"]) == (True, False, "停止邪恶双胞胎", "error")
     assert b["btn-pmkid"].disabled is True
 
 
@@ -549,7 +549,7 @@ async def test_buttons_running_pmkid_shows_stop_and_blocks_others(buttons_screen
     ap = _rsn_ap(wpa3=True, transition_mode=True, wps=True)
     Campaign.active = _FakePmkid()
     b = _buttons(buttons_screen, ap)
-    assert _bs(b["btn-pmkid"]) == (True, False, "Stop PMKID", "error")
+    assert _bs(b["btn-pmkid"]) == (True, False, "停止 PMKID", "error")
     assert b["btn-wps-pin"].disabled is True
     assert b["btn-eviltwin"].disabled is True
 
@@ -591,7 +591,7 @@ async def test_buttons_unconfirmed_encryption_shows_pmkid_disabled_with_reason(b
     st = _buttons(buttons_screen, ap)["btn-pmkid"]
     assert st.display is True and st.disabled is True
     reason = fm.campaign_blocked(PmkidHarvestAttack, ap)
-    assert reason and "confirm" in reason.lower()
+    assert reason and "未确认" in reason
     # A confirmed-PSK AP is enabled with no reason.
     ok_ap = _rsn_ap(akms=("PSK",))
     ok = _buttons(buttons_screen, ok_ap)["btn-pmkid"]
@@ -608,15 +608,15 @@ async def test_buttons_enterprise_hides_pmkid(buttons_screen):
 def test_card_dynamic_each_state():
     assert fm.status_under_card() == ""
     Campaign.active = _FakeWep()
-    assert fm.status_under_card() == "● replaying"
+    assert fm.status_under_card() == "● 重放中"
     Campaign.active = _FakeWep(chop=True)
-    assert fm.status_under_card() == "● chopping"
+    assert fm.status_under_card() == "● 切割中"
     Campaign.active = _FakeWps()
     assert fm.status_under_card() == "● WPS PIN"
     Campaign.active = _FakeDeauth()
-    assert fm.status_under_card() == "● Deauth"
+    assert fm.status_under_card() == "● 解除认证"
     Campaign.active = _FakeEvilTwin()
-    assert fm.status_under_card() == "● EvilTwin"
+    assert fm.status_under_card() == "● 邪恶双胞胎"
     Campaign.active = _FakePbc()
     assert fm.status_under_card() == "● WPS PBC"
 
@@ -634,11 +634,11 @@ def test_headline_eviltwin_active_and_captured():
                          fakeap=types.SimpleNamespace(stats=stats))
     Campaign.active = camp
     active = _headline(_rsn_ap())
-    assert "EvilTwin active" in active[0] and "CH 1" in active[0]
-    assert "auth:2" in active[1] and "assoc:1" in active[1]
-    assert "3 direct" in active[2] and "5 wildcard" in active[2]
+    assert "邪恶双胞胎运行中" in active[0] and "CH 1" in active[0]
+    assert "认证:2" in active[1] and "关联:1" in active[1]
+    assert "3 个定向" in active[2] and "5 个通配" in active[2]
     camp.captured = True
-    assert "Captured" in _headline(_rsn_ap())[0]
+    assert "已捕获" in _headline(_rsn_ap())[0]
 
 
 @pytest.mark.asyncio(loop_scope="module")
@@ -650,10 +650,10 @@ async def test_derive_buttons_all_disabled_when_silenced(buttons_screen, monkeyp
     for bid in ("btn-gen-ivs", "btn-pmkid", "btn-deauth", "btn-wps-pin",
                 "btn-eviltwin", "btn-chop"):
         assert btns[bid].disabled is True
-    assert fm.campaign_blocked(DeauthCampaign, ap) == "AP silenced"
+    assert fm.campaign_blocked(DeauthCampaign, ap) == "AP 已静音"
 
 
 def test_headline_silenced_outranks_listening(monkeypatch):
     ap = _wpa_ap()
     monkeypatch.setattr(Config, "silenced_bssids", [ap.bssid])
-    assert "Silenced" in _headline(ap)[0]
+    assert "已静音" in _headline(ap)[0]

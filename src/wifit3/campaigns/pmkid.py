@@ -60,7 +60,7 @@ class PmkidHarvestAttack(Campaign):
     hotkey = ("p", "PMKID")
     stoppable = True
     idle_label = "PMKID"
-    run_label = "Stop PMKID"
+    run_label = "停止 PMKID"
     idle_variant = "primary"
     run_variant = "error"
 
@@ -79,23 +79,23 @@ class PmkidHarvestAttack(Campaign):
     def ineligible_reason(cls, ap) -> Optional[str]:
         """None (enabled) once a PSK AKM is confirmed and the SSID is known."""
         if ap.is_hidden:
-            return "hidden SSID: can't associate"
+            return "隐藏 SSID：无法关联"
         if set(_HARVESTABLE_AKMS) & set(getattr(ap, "akm_suites", None) or ()):
             return None
-        return "encryption not confirmed yet (no beacon RSN)"
+        return "加密尚未确认（无信标 RSN）"
 
     def status_under_card(self) -> str:
         return "● PMKID"
 
     def status_headlines(self, vault) -> list[str]:
         if self.pmkid:
-            return ["[black bold on green] ✓ PMKID harvested [/black bold on green]",
-                    "[dim]saved to captures/[/dim]"]
+            return ["[black bold on green] ✓ PMKID 已收集 [/black bold on green]",
+                    "[dim]已保存到 captures/[/dim]"]
         if self.fail_reason:
-            return ["[bold red]● PMKID harvest failed[/bold red]",
+            return ["[bold red]● PMKID 收集失败[/bold red]",
                     f"[dim]{self.fail_reason.value}[/dim]"]
-        return ["[bold cyan]● Harvesting PMKID[/bold cyan]",
-                f"[dim]authenticating as {self.client_mac}[/dim]"]
+        return ["[bold cyan]● 正在收集 PMKID[/bold cyan]",
+                f"[dim]以 {self.client_mac} 进行认证[/dim]"]
 
     def __init__(
         self,
@@ -188,8 +188,8 @@ class PmkidHarvestAttack(Campaign):
                         f"[PMKID] Attempt {attempt}/{self.attempts}: Auth + Assoc Req to "
                         f"{self.target.bssid} as {mac_to_str(self.source_mac)}"
                     )
-                    self.log(f"Auth → Assoc [dim bold](client MAC: {self.client_mac})[/dim bold]"
-                             + (f" [dim](retry {attempt})[/dim]" if attempt > 1 else ""))
+                    self.log(f"认证 → 关联 [dim bold]（客户端 MAC：{self.client_mac}）[/dim bold]"
+                             + (f" [dim]（重试 {attempt}）[/dim]" if attempt > 1 else ""))
                     assoc = Association(iface, self.target.bssid, self.target.ssid or "",
                                         self.target.channel, our_mac=self.source_mac,
                                         assoc_trailer_ies=self._assoc_rsn_ie,
@@ -215,8 +215,8 @@ class PmkidHarvestAttack(Campaign):
                                     f"[PMKID] Harvested {hs.pmkid.hex()} from {self.target.bssid} "
                                     f"(STA {mac_to_str(self.source_mac)})"
                                 )
-                                self.log("[bold]M1[/bold] received: "
-                                         "[bright_green]PMKID present[/bright_green]")
+                                self.log("[bold]M1[/bold] 已接收： "
+                                         "[bright_green]存在 PMKID[/bright_green]")
                                 self.pmkid = hs.pmkid
                                 return
                             self.fail_reason = PmkidFail.NO_KDE
@@ -230,8 +230,8 @@ class PmkidHarvestAttack(Campaign):
                 logger.info(
                     f"[PMKID] Attempt {attempt}: no M1 (AP silent), rotating MAC and retrying."
                 )
-                self.log("[bold orange1]M1 not received[/bold orange1] "
-                         "[dim](AP silent, rotating MAC)[/dim]")
+                self.log("[bold orange1]未收到 M1[/bold orange1] "
+                         "[dim]（AP 静默，轮换 MAC）[/dim]")
                 self._rotate_mac()
 
         self.fail_reason = PmkidFail.NO_RESPONSE

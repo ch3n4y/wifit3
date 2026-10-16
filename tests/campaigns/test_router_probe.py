@@ -33,7 +33,7 @@ async def test_probe_ap_rejects_when_no_suitable_probes():
     result = await probe_ap(iface, ap)
 
     assert result.ok is False
-    assert "no suitable probes" in result.detail
+    assert "没有适用于该网络类型的探针" in result.detail
 
 
 def test_probe_gates():

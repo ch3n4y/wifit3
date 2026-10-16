@@ -168,7 +168,7 @@ class Association:
                 return True
         self.associated = False
         if not self.fail_reason:
-            self.fail_reason = "no Assoc resp"
+            self.fail_reason = "无关联响应"
         return False
 
     async def authenticate(self) -> bool:
@@ -221,7 +221,7 @@ class Association:
                 self.state = AssocState.ASSOCIATED
                 logger.info("<- Assoc Resp (status 0: %s) from %s", desc, self.bssid)
             elif pkt.status is not None:
-                self.fail_reason = f"Assoc rejected (status {pkt.status}: {desc})"
+                self.fail_reason = f"关联被拒绝 (status {pkt.status}: {desc})"
                 logger.info("<- Assoc Resp rejected (status %s: %s) from %s", pkt.status, desc, self.bssid)
         elif isinstance(pkt, AuthPacket):
             self.auth_status = pkt.status
@@ -231,12 +231,12 @@ class Association:
                 self.state = AssocState.AUTHENTICATED
                 logger.info("<- Auth Resp (status 0: %s) from %s", desc, self.bssid)
             elif pkt.status is not None:
-                self.fail_reason = f"Auth rejected (status {pkt.status}: {desc})"
+                self.fail_reason = f"认证被拒绝 (status {pkt.status}: {desc})"
                 logger.info("<- Auth Resp rejected (status %s: %s) from %s", pkt.status, desc, self.bssid)
         elif isinstance(pkt, DeauthPacket):
             kind = "disassoc" if getattr(pkt, "type", "") == "mgmt_10" else "deauth"
             desc = reason_description(pkt.reason)
-            self.fail_reason = f"{kind} (reason {pkt.reason}: {desc})"
+            self.fail_reason = f"{kind} (原因 {pkt.reason}: {desc})"
             logger.info("<- %s (reason %s: %s) from %s", kind.upper(), pkt.reason, desc, self.bssid)
             self.associated = False
             self._assoc_ok = False

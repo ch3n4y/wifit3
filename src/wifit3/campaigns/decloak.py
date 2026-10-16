@@ -109,9 +109,9 @@ class DecloakCampaign(Campaign):
 
     button_id = "btn-decloak"
     key = "decloak"
-    hotkey = ("h", "Decloak")
-    idle_label = "Decloak"
-    run_label = "Stop Decloak"
+    hotkey = ("h", "解除隐藏")
+    idle_label = "解除隐藏"
+    run_label = "停止解除隐藏"
 
     @classmethod
     def visible(cls, ap: AccessPoint) -> bool:
@@ -141,20 +141,20 @@ class DecloakCampaign(Campaign):
         return len(self.candidate_ssids) * methods
 
     def status_under_card(self) -> str:
-        return "● Decloak"
+        return "● 解除隐藏"
 
     def status_headlines(self, vault) -> list[str]:
-        return ["[bold cyan]● Decloak[/bold cyan] guessing SSIDs",
-                f"[dim]{self.sent}/{self.planned} sent[/dim]"]
+        return ["[bold cyan]● 解除隐藏[/bold cyan] 猜测 SSID",
+                f"[dim]已发送 {self.sent}/{self.planned}[/dim]"]
 
     async def _loop(self) -> None:
         if not self.candidate_ssids:
-            self._log("no named sibling to guess from")
+            self._log("没有已命名的同族 SSID 可供猜测")
             return
         if self.iface is None:
-            self._log(f"no card can reach channel {self.ap.channel}")
+            self._log(f"没有网卡能到达信道 {self.ap.channel}")
             return
-        self._log(f"guessing from '{self.sibling_ssid}'")
+        self._log(f"正在基于「{self.sibling_ssid}」猜测")
         async with self.array.claim(self.iface):
             if self.iface.current_channel != self.ap.channel:
                 await self.iface.set_channel(self.ap.channel)

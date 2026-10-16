@@ -12,12 +12,12 @@ class ChannelFilterDialog(ModalScreen[Optional[List[int]]]):
     """Modal dialog that lets the user pick which channels the hopper visits."""
 
     BINDINGS = [
-        Binding("escape", "cancel", "Cancel", show=True),
-        Binding("a", "select_all", "All", show=True),
+        Binding("escape", "cancel", "取消", show=True),
+        Binding("a", "select_all", "全部", show=True),
         Binding("2", "select_24ghz", "2.4 GHz", show=True),
         Binding("5", "select_5ghz", "5 GHz", show=True),
-        Binding("n", "select_none", "None", show=True),
-        Binding("enter", "confirm", "OK", show=True, priority=True),
+        Binding("n", "select_none", "全不选", show=True),
+        Binding("enter", "confirm", "确定", show=True, priority=True),
     ]
 
     DEFAULT_CSS = """
@@ -85,16 +85,16 @@ class ChannelFilterDialog(ModalScreen[Optional[List[int]]]):
         ]
 
         with Vertical(id="dialog"):
-            yield Label("Channel Filter", id="title")
+            yield Label("信道筛选", id="title")
             with Horizontal(id="band-row"):
-                yield Button("[u]a[/]ll", variant="success", id="btn-all", compact=True)
+                yield Button("[u]全[/]部", variant="success", id="btn-all", compact=True)
                 yield Button("[u]2[/].4 GHz", variant="primary", id="btn-24ghz", compact=True)
                 yield Button("[u]5[/] GHz", variant="primary", id="btn-5ghz", compact=True)
-                yield Button("[u]n[/]one", variant="error", id="btn-none", compact=True)
+                yield Button("[u]全[/]不选", variant="error", id="btn-none", compact=True)
             yield SelectionList[int](*selections, id="channel-list")
             with Horizontal(id="button-row"):
-                yield Button("OK", variant="primary", id="btn-ok")
-                yield Button("Cancel", variant="default", id="btn-cancel")
+                yield Button("确定", variant="primary", id="btn-ok")
+                yield Button("取消", variant="default", id="btn-cancel")
 
     # Rows the dialog spends on everything *except* the channel list's own box.
     _CHROME_ROWS = 12

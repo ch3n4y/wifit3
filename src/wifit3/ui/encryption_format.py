@@ -142,7 +142,7 @@ class EncryptionSummary:
             return f"[{_ATTACKABLE}]WPA2[/{_ATTACKABLE}]" + detail
 
         if self.type is EncryptionType.OPEN:
-            return f"[{muted}]OPEN[/{muted}]"
+            return f"[{muted}]开放[/{muted}]"
 
         if self.type is EncryptionType.WEP:
             # Attackable now (IV capture → replay → crack).

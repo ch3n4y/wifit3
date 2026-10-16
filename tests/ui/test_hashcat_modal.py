@@ -64,7 +64,7 @@ def test_an_unwritable_config_warns_but_keeps_the_paths(monkeypatch):
     modal._remember(r"D:\hashcat.exe", r"D:\rockyou.txt", "")
 
     assert Config.hashcat_path == r"D:\hashcat.exe"
-    assert warnings and warnings[0][1].get("title") == "Config Error"
+    assert warnings and warnings[0][1].get("title") == "配置错误"
 
 
 async def test_the_self_test_checkbox_edits_the_args_text():

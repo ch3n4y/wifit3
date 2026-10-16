@@ -21,7 +21,7 @@ class ThemeSetting(VerticalGroup):
     ThemeSetting { border: round $primary }
     """
     def compose(self) -> ComposeResult:
-        self.border_title = "Theme"
+        self.border_title = "主题"
         yield Select(self._theme_options(), id="theme",
                      value=self.app.theme, allow_blank=False)
 
@@ -53,17 +53,17 @@ class SortDelaySetting(VerticalGroup):
     """
 
     OPTIONS: list[tuple[str, float]] = [
-        ("Instant", 0.0),
-        ("0.25 seconds", 0.25),
-        ("1 second", 1.0),
-        ("2 seconds", 2.0),
-        ("3 seconds", 3.0),
-        ("5 seconds", 5.0),
-        ("Never", -1.0),
+        ("立即", 0.0),
+        ("0.25 秒", 0.25),
+        ("1 秒", 1.0),
+        ("2 秒", 2.0),
+        ("3 秒", 3.0),
+        ("5 秒", 5.0),
+        ("永不", -1.0),
     ]
 
     def compose(self) -> ComposeResult:
-        self.border_title = "Sort Delay"
+        self.border_title = "排序延迟"
         current = Config.scanner_sort_delay
         values = [val for _, val in self.OPTIONS]
         value = current if current in values else 2.0
@@ -80,9 +80,9 @@ class CapturesDirSetting(VerticalGroup):
     CapturesDirSetting { border: round $primary }
     """
     def compose(self) -> ComposeResult:
-        self.border_title = "Save directory"
+        self.border_title = "保存目录"
         yield PathInput(Config.captures_dir, directories_only=True, prefer_relative=True,
-                        title="Save directory", id="captures_dir")
+                        title="保存目录", id="captures_dir")
 
 
 class SaveFooter(Horizontal):
@@ -95,15 +95,15 @@ class SaveFooter(Horizontal):
     """
 
     def compose(self) -> ComposeResult:
-        yield Button(Text("Save"), "primary", id="save")
-        yield Button(Text("Cancel"), "default", id="cancel")
+        yield Button(Text("保存"), "primary", id="save")
+        yield Button(Text("取消"), "default", id="cancel")
 
     def cancel_pressed(self, event: Event):
         self.app.pop_screen()
 
 
 class PreferencesModal(ModalScreen):
-    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+    BINDINGS = [Binding("escape", "cancel", "取消")]
 
     DEFAULT_CSS = """
     PreferencesModal { align: center middle; }
@@ -121,11 +121,11 @@ class PreferencesModal(ModalScreen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
-            yield Label("Preferences", id="title")
+            yield Label("偏好设置", id="title")
             yield ThemeSetting()
             yield SortDelaySetting()
             yield CapturesDirSetting()
-            yield Checkbox("Save .pcap handshakes", value=Config.save_pcap, id="save_pcap")
+            yield Checkbox("保存 .pcap 握手文件", value=Config.save_pcap, id="save_pcap")
             yield SaveFooter()
 
     def on_mount(self) -> None:
@@ -145,7 +145,7 @@ class PreferencesModal(ModalScreen):
         try:
             Config.save()
         except Exception as e:
-            self.notify(str(e), title="Config Error")
+            self.notify(str(e), title="配置错误")
         self.dismiss()
 
     @on(Button.Pressed, "#cancel")

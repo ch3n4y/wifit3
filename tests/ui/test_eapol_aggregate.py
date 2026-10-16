@@ -28,11 +28,11 @@ def test_complete_handshake_flushes_one_tree():
     agg.on_eapol(_eapol(2), now=0.1)
     lines = agg.on_handshake(_hs("M1+M2"), now=0.1)
     text = "\n".join(lines)
-    assert _CLIENT in text and "4-Way Handshake" in text       # header names the client
-    assert "M1" in text and "AP→Client" in text                # M1 direction
-    assert "M2" in text and "AP←Client" in text                # M2 direction
+    assert _CLIENT in text and "四次握手" in text             # header names the client
+    assert "M1" in text and "AP→客户端" in text                # M1 direction
+    assert "M2" in text and "AP←客户端" in text                # M2 direction
     assert "PMKID" in text                                      # M1's PMKID tick
-    assert "Valid 4-Way Handshake (M1+M2)" in text
+    assert "有效四次握手 (M1+M2)" in text
     assert len(lines) == 4                                      # header + M1 + M2 + verdict
 
 
@@ -46,7 +46,7 @@ def test_save_hint_folds_in_as_the_closing_leaf():
     # the terminal node; the save note closes the tree.
     assert len(lines) == 5
     assert "saved: " in lines[-1]
-    assert "Valid 4-Way Handshake" in "\n".join(lines)
+    assert "有效四次握手" in "\n".join(lines)
 
 
 def test_aggregates_repeated_messages_with_count():
@@ -57,7 +57,7 @@ def test_aggregates_repeated_messages_with_count():
     assert len(flushed) == 1
     text = "\n".join(flushed[0])
     assert "M1 ×20" in text
-    assert "Valid 4-Way Handshake" not in text                 # partial → no verdict
+    assert "有效四次握手" not in text                 # partial → no verdict
 
 
 def test_partial_waits_for_settle_then_flushes_once():
@@ -74,22 +74,22 @@ def test_uncrackable_handshake_closes_with_the_reason():
     agg.on_eapol(_eapol(1), now=0.0)
     agg.on_eapol(_eapol(2), now=0.1)                           # a real (keystone-bearing) 4-way
     text = "\n".join(agg.tick(now=5.0, label_for=lambda mac: "SAE")[0])
-    assert "SAE 4-Way Handshake" in text and "not crackable" in text
-    assert "Valid 4-Way Handshake" not in text
+    assert "SAE 四次握手" in text and "不可破解" in text
+    assert "有效四次握手" not in text
 
 
 def test_incomplete_uncrackable_still_labelled():
     agg = EapolAggregator(settle_s=3.0)
     agg.on_eapol(_eapol(1), now=0.0)                           # M1 only: no valid pair, still SAE
     text = "\n".join(agg.tick(now=5.0, label_for=lambda mac: "SAE")[0])
-    assert "SAE 4-Way Handshake" in text and "not crackable" in text
+    assert "SAE 四次握手" in text and "不可破解" in text
 
 
 def test_no_reason_leaf_when_label_is_none():
     agg = EapolAggregator(settle_s=3.0)
     agg.on_eapol(_eapol(1), now=0.0)
     text = "\n".join(agg.tick(now=5.0, label_for=lambda mac: None)[0])
-    assert "not crackable" not in text
+    assert "不可破解" not in text
 
 
 def test_suppress_until_new_instance():
@@ -97,7 +97,7 @@ def test_suppress_until_new_instance():
     agg.on_eapol(_eapol(1), now=0.0)
     agg.on_eapol(_eapol(2), now=0.1)
     first = agg.on_handshake(_hs("M1+M2"), now=0.1)
-    assert "capture ×" not in "\n".join(first)                 # first capture, no ×N
+    assert "捕获 ×" not in "\n".join(first)                 # first capture, no ×N
 
     # Retransmitted M3/M4 of the captured exchange are swallowed (no new burst).
     agg.on_eapol(_eapol(3), now=0.2)
@@ -107,7 +107,7 @@ def test_suppress_until_new_instance():
     # A genuinely new instance completing re-announces compactly as ×2.
     second = agg.on_handshake(_hs("M2+M3"), now=5.0)
     text = "\n".join(second)
-    assert "Valid 4-Way Handshake (M2+M3)" in text and "capture ×2" in text
+    assert "有效四次握手 (M2+M3)" in text and "捕获 ×2" in text
     assert len(second) == 1                                    # one-liner, no tree
 
 
@@ -118,7 +118,7 @@ def test_reset_makes_a_client_brand_new_again():
     agg.reset()
     agg.on_eapol(_eapol(1), now=1.0)
     lines = agg.on_handshake(_hs("M1+M2"), now=1.0)
-    assert "capture ×" not in "\n".join(lines)                 # not a re-announce
+    assert "捕获 ×" not in "\n".join(lines)                 # not a re-announce
     assert len(lines) >= 2                                     # a fresh tree
 
 

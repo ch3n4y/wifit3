@@ -32,8 +32,8 @@ def text_matches(query: str, bssid: str, ssid: Optional[str]) -> bool:
 
 class EncryptionFilter(Enum):
     """ENCRYPT dropdown choices; ``value`` doubles as the label. WPA/2 merges WPA1+WPA2."""
-    ALL = "All"
-    OPEN = "Open"
+    ALL = "全部"
+    OPEN = "开放"
     WEP = "WEP"
     WPA = "WPA/2"
     WPA3_TRANSITION = "WPA3→2"
@@ -104,10 +104,10 @@ class FilterBar(Horizontal):
     def __init__(self, supported_channels: List[int]) -> None:
         super().__init__()
         self._supported = sorted(set(supported_channels))
-        self.border_title = "FILTER"
+        self.border_title = "筛选"
 
     def compose(self) -> ComposeResult:
-        enc = Label("[u]E[/u]ncryption")
+        enc = Label("[u]加[/u]密")
         enc.ALLOW_SELECT = False
         yield enc
         yield Select(
@@ -115,8 +115,8 @@ class FilterBar(Horizontal):
             allow_blank=False, id="filter-encryption", compact=True,
         )
         yield Button(self._channels_text(None), id="filter-channels", compact=True)
-        yield Input(placeholder="filter by ssid…", id="filter-text", compact=True)
-        yield Checkbox("Hide silenced", value=Config.hide_silenced,
+        yield Input(placeholder="按SSID筛选…", id="filter-text", compact=True)
+        yield Checkbox("隐藏已静音", value=Config.hide_silenced,
                        id="filter-hide-silenced", compact=True)
 
     def focus_text(self) -> None:
@@ -140,7 +140,7 @@ class FilterBar(Horizontal):
             picked = [c for c in band if c in chans]
             if picked:
                 parts.append(short if set(picked) == set(band) else band_ranges(picked)[0][1])
-        return "[u]C[/u]hannels: " + (" + ".join(parts) or "none")
+        return "[u]信[/u]道: " + (" + ".join(parts) or "无")
 
     def action_leave(self) -> None:
         self._focus_table()

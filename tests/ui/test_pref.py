@@ -35,7 +35,7 @@ async def test_save_notifies_instead_of_crashing_on_config_error(monkeypatch):
         await pilot.pause(0)
 
         assert toasts, "a failed save should surface a toast"
-        assert toasts[0][1].get("title") == "Config Error"
+        assert toasts[0][1].get("title") == "配置错误"
         assert not isinstance(app.screen, PreferencesModal)   # dismissed anyway
 
 

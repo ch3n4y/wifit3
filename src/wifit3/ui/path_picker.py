@@ -114,7 +114,7 @@ class _DirectoriesOnlyTree(_PickerTree):
 class PathPickerModal(ModalScreen[Optional[Path]]):
     """Pick a file or a directory. Dismisses with the chosen path, or None if cancelled."""
 
-    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+    BINDINGS = [Binding("escape", "cancel", "取消")]
     DEFAULT_CSS = """
     PathPickerModal { align: center middle; }
     PathPickerModal #dialog {
@@ -135,7 +135,7 @@ class PathPickerModal(ModalScreen[Optional[Path]]):
     """
 
     def __init__(self, start: str | Path, *, directories_only: bool = False,
-                 title: str = "Select", prefer_relative: bool = False) -> None:
+                 title: str = "选择", prefer_relative: bool = False) -> None:
         super().__init__()
         self._start = Path(start).expanduser()
         self._directories_only = directories_only
@@ -154,8 +154,8 @@ class PathPickerModal(ModalScreen[Optional[Path]]):
             yield Input(str(self._start), id="picker-path")
             yield tree(root, id="picker-tree")
             with Horizontal(id="buttons"):
-                yield Button("Cancel", "default", id="picker-cancel")
-                yield Button("Select", "primary", id="picker-select")
+                yield Button("取消", "default", id="picker-cancel")
+                yield Button("选择", "primary", id="picker-select")
 
     @on(Tree.NodeHighlighted)
     def _track_highlight(self, event: Tree.NodeHighlighted) -> None:
@@ -195,14 +195,14 @@ class PathPickerModal(ModalScreen[Optional[Path]]):
             if _is_dir(path):
                 self._dismiss_path(path)
             else:
-                self.notify(f"Not a directory: {path}", severity="error")
+                self.notify(f"不是目录：{path}", severity="error")
             return
         if _is_dir(path):
             self._reroot(path)
         elif path.is_file():
             self._dismiss_path(path)
         else:
-            self.notify(f"No such file: {path}", severity="error")
+            self.notify(f"无此文件：{path}", severity="error")
 
     def _dismiss_path(self, path: Path) -> None:
         self.dismiss(relative_to_cwd(path) if self._prefer_relative else path)
@@ -231,7 +231,7 @@ class PathInput(Horizontal):
     """
 
     def __init__(self, value: str = "", *, directories_only: bool = False,
-                 title: str = "Select", placeholder: str = "", prefer_relative: bool = False,
+                 title: str = "选择", placeholder: str = "", prefer_relative: bool = False,
                  id: str | None = None) -> None:
         super().__init__()
         self._value = value

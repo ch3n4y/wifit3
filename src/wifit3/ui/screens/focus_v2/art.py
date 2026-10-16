@@ -246,4 +246,4 @@ def display_name(iface) -> str:
     product_name, else the bare chipset. ``"card"`` when nothing is set."""
     return (getattr(getattr(iface, "driver", None), "product_name", None)
             or getattr(iface, "product_name", None)
-            or getattr(iface, "chipset", None) or "card")
+            or getattr(iface, "chipset", None) or "网卡")

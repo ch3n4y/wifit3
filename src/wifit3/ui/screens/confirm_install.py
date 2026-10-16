@@ -23,19 +23,19 @@ _PULSE = ["#6e0000", "#8a0000", "#a40000", "#c00000", "#a40000", "#8a0000"]
 # Default copy = the Windows WinUSB case. The Linux connect-failure path reuses this same
 # dialog (a missing REQUIRED link between Wifit3 and the card) with its own wording, so the
 # diagram/title/warning/verb are parametrised rather than the dialog forked.
-_DEFAULT_TITLE = "Wifit3 needs the WinUSB driver to talk to this card"
+_DEFAULT_TITLE = "Wifit3 需要 WinUSB 驱动才能与此网卡通信"
 _DEFAULT_WARNING = (
-    "[bold $text-warning]Warning:[/] this [italic $text-warning]replaces the "
-    "card's current driver[/]\n\n"
-    "Windows will stop seeing it as a wireless device.\n\n"
-    "You can uninstall WinUSB using the [bold white on red] x [/] button")
+    "[bold $text-warning]警告：[/]这会[italic $text-warning]替换网卡当前驱动[/]"
+    "\n\n"
+    "Windows 将不再把它识别为无线网卡。\n\n"
+    "可点按 [bold white on red] x [/] 按钮卸载 WinUSB")
 
 
 class ConfirmInstallDialog(ModalScreen[bool]):
     BINDINGS = [
-        Binding("y", "yes", "Install", show=True),
-        Binding("n", "no", "Cancel", show=True),
-        Binding("escape", "no", "Cancel", show=True),
+        Binding("y", "yes", "安装", show=True),
+        Binding("n", "no", "取消", show=True),
+        Binding("escape", "no", "取消", show=True),
     ]
 
     DEFAULT_CSS = """
@@ -59,8 +59,8 @@ class ConfirmInstallDialog(ModalScreen[bool]):
 
     def __init__(self, description: str, *, chipset: str | None = None,
                  title: str = _DEFAULT_TITLE,
-                 link_label: str = "WinUSB Driver", warning: str = _DEFAULT_WARNING,
-                 verb: str = "Install WinUSB for", confirm_label: str = "Install",
+                 link_label: str = "WinUSB 驱动", warning: str = _DEFAULT_WARNING,
+                 verb: str = "为以下网卡安装 WinUSB", confirm_label: str = "安装",
                  also: str = "") -> None:
         super().__init__()
         self._full = description
@@ -92,9 +92,9 @@ class ConfirmInstallDialog(ModalScreen[bool]):
         grid.add_row(
             Text("✓", style="bold green"),
             Text(""),
-            Text(" ✗ REQUIRED ", style=f"bold white on {pulse}"),
+            Text(" ✗ 必需 ", style=f"bold white on {pulse}"),
             Text(""),
-            Text("✓ SUPPORTED", style="bold green"),
+            Text("✓ 已支持", style="bold green"),
         )
         return grid
 
@@ -104,10 +104,10 @@ class ConfirmInstallDialog(ModalScreen[bool]):
             yield Static(self._diagram(_PULSE[0]), id="diagram")
             with Center(id="warn-center"):
                 yield Label(self._warning, id="warn")
-            yield Label(f"{self._verb} [bold]{self._full}{self._also}[/]?", id="question")
+            yield Label(f"{self._verb} [bold]{self._full}{self._also}[/]？", id="question")
             with Horizontal(id="button-row"):
                 yield Button(self._confirm_label, variant="success", id="btn-yes")
-                yield Button("Cancel", variant="default", id="btn-no")
+                yield Button("取消", variant="default", id="btn-no")
 
     def on_mount(self) -> None:
         self.query_one("#btn-yes", Button).focus()

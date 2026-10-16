@@ -95,11 +95,11 @@ class VaultTable(Widget):
                     if exists:
                         tabs.add_tab(Tab(title, id=tab_id))
                         
-            _ensure_tab("tab-all", "ALL", True)
+            _ensure_tab("tab-all", "全部", True)
             _ensure_tab("tab-psk", "PSK", has_psk)
-            _ensure_tab("tab-wep", "WEP KEY", has_wep)
+            _ensure_tab("tab-wep", "WEP 密钥", has_wep)
             _ensure_tab("tab-pin", "WPS PIN", has_pin)
-            _ensure_tab("tab-hs", "HANDSHAKE", has_hs)
+            _ensure_tab("tab-hs", "握手", has_hs)
             _ensure_tab("tab-pmk", "PMKID", has_pmk)
             
             try:
@@ -125,7 +125,7 @@ class VaultTable(Widget):
                 if self._current_tab == "tab-pmk" and not any(c.type == CaptureType.PMKID for c in caps): continue
                 
                 # Build Row Markup
-                name = ssid or "‹hidden›"
+                name = ssid or "‹隐藏›"
                 bssid_suffix = f" [dim]{bssid}[/dim]" if ssid_counts.get(ssid or "", 0) > 1 else ""
                 
                 badges = []
@@ -151,7 +151,7 @@ class VaultTable(Widget):
                 except Exception:
                     pass
 
-            self.border_title = f"VAULT ({len(self._aps)} APs)"
+            self.border_title = f"保险库（{len(self._aps)} 个 AP）"
             self.post_message(self.TableReloaded())
         finally:
             self._is_reloading = False

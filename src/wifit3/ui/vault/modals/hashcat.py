@@ -29,7 +29,7 @@ def _default_hashcat_path() -> str:
 class HashcatConfigModal(ModalScreen[dict]):
     """Configuration modal for Hashcat jobs."""
 
-    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+    BINDINGS = [Binding("escape", "cancel", "取消")]
 
     DEFAULT_CSS = """
     HashcatConfigModal {
@@ -61,27 +61,27 @@ class HashcatConfigModal(ModalScreen[dict]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="hashcat-dialog"):
-            yield Label("Launch Hashcat", id="hashcat-title")
+            yield Label("启动 Hashcat", id="hashcat-title")
             
-            yield Label("Hashcat Executable Path:", classes="hashcat-label")
-            yield PathInput(_default_hashcat_path(), title="Select hashcat executable",
+            yield Label("Hashcat 可执行文件路径：", classes="hashcat-label")
+            yield PathInput(_default_hashcat_path(), title="选择 hashcat 可执行文件",
                             id="hashcat-exe")
             
-            yield Label("Wordlist Path:", classes="hashcat-label")
-            yield PathInput(Config.wordlist_path or "", title="Select wordlist",
-                            placeholder="e.g. D:\\wordlists\\Top29Million.txt",
+            yield Label("字典路径：", classes="hashcat-label")
+            yield PathInput(Config.wordlist_path or "", title="选择字典文件",
+                            placeholder="例如 D:\\wordlists\\Top29Million.txt",
                             id="hashcat-wordlist")
             
             args = Config.hashcat_args or ""
-            yield Label("Hashcat Args:", classes="hashcat-label")
-            yield Input(args, placeholder="custom hashcat args (e.g. -a 0 -w 3)",
+            yield Label("Hashcat 参数：", classes="hashcat-label")
+            yield Input(args, placeholder="自定义 hashcat 参数（例如 -a 0 -w 3）",
                         id="hashcat-args")
             yield Checkbox(_SELF_TEST_DISABLE, value=_SELF_TEST_DISABLE in args,
                            id="hashcat-self-test-disable")
 
             with Horizontal(id="hashcat-buttons"):
-                yield Button("Cancel", variant="error", id="hashcat-cancel")
-                yield Button("Launch", variant="success", id="hashcat-launch")
+                yield Button("取消", variant="error", id="hashcat-cancel")
+                yield Button("启动", variant="success", id="hashcat-launch")
 
     @on(Checkbox.Changed, "#hashcat-self-test-disable")
     def _toggle_self_test_disable(self, event: Checkbox.Changed) -> None:
@@ -102,7 +102,7 @@ class HashcatConfigModal(ModalScreen[dict]):
             exe = self.query_one("#hashcat-exe", Input).value.strip()
             wordlist = self.query_one("#hashcat-wordlist", Input).value.strip()
             if not exe or not wordlist:
-                self.notify("Please provide both executable and wordlist paths", severity="error")
+                self.notify("请同时提供可执行文件和字典路径", severity="error")
                 return
             args = self.query_one("#hashcat-args", Input).value.strip()
             self._remember(exe, wordlist, args)
@@ -120,4 +120,4 @@ class HashcatConfigModal(ModalScreen[dict]):
         try:
             Config.save()
         except ConfigError as e:
-            self.notify(str(e), title="Config Error", severity="warning")
+            self.notify(str(e), title="配置错误", severity="warning")

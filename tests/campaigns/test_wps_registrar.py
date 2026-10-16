@@ -270,7 +270,7 @@ async def test_silent_ap_reads_as_no_response():
     assert out.reached_m1 is False
     assert out.config_error is None
     assert not out.refused                 # mere silence is NOT an active refusal
-    assert "no reply" in out.detail
+    assert "无响应" in out.detail
 
 
 def test_describe_frame_names_mgmt_and_data():
@@ -316,7 +316,7 @@ async def test_deauth_before_m1_is_an_active_refusal():
     assert out.result is PinResult.TIMEOUT
     assert out.refused
     assert out.reached_m1 is False
-    assert out.detail == "deauth (802.1X-auth-failed)"
+    assert out.detail == "解除认证（802.1X-auth-failed）"
 
 
 async def test_eap_failure_before_m1_is_an_active_refusal():
@@ -329,4 +329,4 @@ async def test_eap_failure_before_m1_is_an_active_refusal():
     out = await asyncio.wait_for(reg.try_pin("12345670"), timeout=2.0)
     assert out.result is PinResult.PROTO_ERROR
     assert out.refused
-    assert out.detail == "EAP-FAIL before PIN answer"
+    assert out.detail == "EAP-FAIL 在 PIN 判定之前"

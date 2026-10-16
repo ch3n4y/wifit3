@@ -174,7 +174,7 @@ class WpsRegistrar:
         if self.tx_ack:
             landed = await self.t.send_until_ack(frame, max_retries=self.ack_resends)
             if landed is False:
-                self.log(f"[WPS] -> frame un-ACKed after {self.ack_resends + 1} sends (AP not hearing us)")
+                self.log(f"[WPS] -> 发送 {self.ack_resends + 1} 次仍未获 ACK（AP 未收到）")
         else:
             await self.t.send_no_wait(frame)
 
@@ -206,7 +206,7 @@ class WpsRegistrar:
             return AttemptOutcome(result, pin, reached_m1=reached_m1, pixie=pixie, **kw)
 
         await self._send_1x(M.eapol_start())
-        self.log(f"[WPS] -> EAPOL-Start (pin {pin})")
+        self.log(f"[WPS] -> EAPOL-Start（PIN {pin}）")
 
         # We answer every retransmit of the CURRENT stage as delivery insurance; the
         # stale-message guard below drops retransmits of stages we have already passed.
@@ -215,7 +215,7 @@ class WpsRegistrar:
         while time.monotonic() < overall_deadline:
             frame = await self.t.recv(min(timeout, overall_deadline - time.monotonic()))
             if self.should_stop is not None and self.should_stop():
-                return _out(PinResult.ABORTED, detail="stopped")   # abort before any late logging
+                return _out(PinResult.ABORTED, detail="已停止")   # abort before any late logging
             timeout = self.msg_timeout
             if frame is None:
                 # No reply in the window. Our injected frames land no-ACK/no-retry, so the
@@ -224,8 +224,8 @@ class WpsRegistrar:
                 # rotation) before inferring anything from the silence.
                 if resends_left > 0 and self._last_1x_frame is not None:
                     resends_left -= 1
-                    self.log(f"[WPS] no reply (last_sent={last_sent or 'start'}): resending "
-                             f"in-session ({resends_left} left)")
+                    self.log(f"[WPS] 无响应（last_sent={last_sent or 'start'}）：会话内重发"
+                             f"（剩余 {resends_left} 次）")
                     await self.t.send_no_wait(self._last_1x_frame)
                     continue
                 # Resends exhausted. After M4/M6 a silent drop is a half-wrong verdict
@@ -233,22 +233,22 @@ class WpsRegistrar:
                 # set) is a real rejection. If a correct first half ever reads as wrong via
                 # THIS line, the AP's M5 was lost, not refused.
                 if last_sent == "M4":
-                    self.log("[WPS] no reply after M4 → assuming first-half-wrong "
-                             "(timeout-as-NACK; an M5 may have been lost)")
-                    return _out(PinResult.FIRST_HALF_WRONG, detail="no reply after M4",
+                    self.log("[WPS] M4 之后无响应 → 判定前半段错误"
+                             "（超时视为 NACK；M5 可能已丢失）")
+                    return _out(PinResult.FIRST_HALF_WRONG, detail="M4 之后无响应",
                                 via_timeout=True)
                 if last_sent == "M6":
-                    self.log("[WPS] no reply after M6 → assuming second-half-wrong "
-                             "(timeout-as-NACK)")
-                    return _out(PinResult.SECOND_HALF_WRONG, detail="no reply after M6",
+                    self.log("[WPS] M6 之后无响应 → 判定后半段错误"
+                             "（超时视为 NACK）")
+                    return _out(PinResult.SECOND_HALF_WRONG, detail="M6 之后无响应",
                                 via_timeout=True)
                 if identity_reqs >= _IDENTITY_STALL:
                     return _out(PinResult.TIMEOUT, refused=True,
-                                detail=f"stalled at ID {identity_reqs}x, no M1")
+                                detail=f"在 ID 阶段停滞 {identity_reqs} 次，未收到 M1")
                 # Mere silence (not refused): name the WSC message we were still waiting on.
                 awaiting = "M1" if not reached_m1 else ("M3" if highest_mt == M.WPS_M1 else None)
                 return _out(PinResult.TIMEOUT,
-                            detail=f"no reply to {awaiting}" if awaiting else "no reply")
+                            detail=f"{awaiting} 无响应" if awaiting else "无响应")
 
             p = M.parse_rx_frame(frame)
             if p is None:
@@ -263,25 +263,25 @@ class WpsRegistrar:
                     tag = f"UNPARSED EAPOL/{kind}" if is_eapol else kind
                     extra = (f" reason={disassoc_reason(frame)}"
                              if kind in ("mgmt/DISASSOC", "mgmt/DEAUTH") else "")
-                    self.log(f"[WPS] <- {tag}{extra} from AP ({len(frame)}B): {frame[:56].hex()}")
+                    self.log(f"[WPS] <- {tag}{extra} 来自 AP（{len(frame)}B）：{frame[:56].hex()}")
                 if kind in ("mgmt/DISASSOC", "mgmt/DEAUTH"):
                     # The association is gone: resending into it only earns more
                     # class-2/3 kicks, and no PIN verdict can be read off a dead link.
                     # Before M1 this is the AP refusing an external registrar outright.
+                    label = "解除认证" if kind == "mgmt/DEAUTH" else "解除关联"
                     return _out(PinResult.TIMEOUT, refused=not reached_m1,
-                                detail=f"{kind.removeprefix('mgmt/').lower()} "
-                                       f"({disassoc_reason(frame)})")
+                                detail=f"{label}（{disassoc_reason(frame)}）")
                 continue
 
             if p.is_identity_request:
                 if highest_mt == 0:          # ignore identity retransmits once WSC starts
                     identity_reqs += 1
                     if identity_reqs == 1:
-                        self.log(f"[WPS] <- EAP-Req/Identity (id {p.eap_id}); -> Identity response")
+                        self.log(f"[WPS] <- EAP-Req/Identity（id {p.eap_id}）；-> 身份响应")
                     elif identity_reqs == _IDENTITY_STALL:
-                        self.log(f"[WPS] AP re-requested Identity {identity_reqs}x without reaching "
-                                 f"M1. It may require a link-layer ACK we don't send (auto-ACK); "
-                                 f"still answering")
+                        self.log(f"[WPS] AP 第 {identity_reqs} 次重新请求 Identity 仍未进入 "
+                                 f"M1。它可能要求一个我们不发送的链路层 ACK（自动 ACK）；"
+                                 f"继续应答")
                     await self._send_1x(M.eap_identity_response(p.eap_id))
                 continue
 
@@ -293,16 +293,16 @@ class WpsRegistrar:
                                 if ce_raw and len(ce_raw) >= 2 else None)
                 kind = "EAP-FAIL" if p.is_eap_failure else "WSC_NACK"
                 self.log(f"[WPS] <- {kind} config_error={config_error_name(config_error)} "
-                         f"(last_sent={last_sent})")
+                         f"（last_sent={last_sent}）")
                 if last_sent == "M4":
-                    return _out(PinResult.FIRST_HALF_WRONG, detail="NACK after M4",
+                    return _out(PinResult.FIRST_HALF_WRONG, detail="M4 之后收到 NACK",
                                 config_error=config_error)
                 if last_sent == "M6":
-                    return _out(PinResult.SECOND_HALF_WRONG, detail="NACK after M6",
+                    return _out(PinResult.SECOND_HALF_WRONG, detail="M6 之后收到 NACK",
                                 config_error=config_error)
                 # An EAP-Failure before M1 is the AP's authenticator refusing an
                 # external registrar (locked / no AP PIN), not an in-protocol NACK.
-                return _out(PinResult.PROTO_ERROR, detail=f"{kind} before PIN answer",
+                return _out(PinResult.PROTO_ERROR, detail=f"{kind} 在 PIN 判定之前",
                             config_error=config_error,
                             refused=p.is_eap_failure and not reached_m1)
 
@@ -310,8 +310,8 @@ class WpsRegistrar:
             if mt and mt < highest_mt:
                 # Stale retransmit of a stage we've already passed. Surfaced because a real
                 # M5 (0x05) dropped here would read as a false first-half-wrong.
-                self.log(f"[WPS] <- stale msg_type=0x{mt:02x} (< 0x{highest_mt:02x}), "
-                         f"dropping (last_sent={last_sent})")
+                self.log(f"[WPS] <- 过期 msg_type=0x{mt:02x}（< 0x{highest_mt:02x}），"
+                         f"丢弃（last_sent={last_sent}）")
                 continue
             if mt in (M.WPS_M1, M.WPS_M3, M.WPS_M5, M.WPS_M7):
                 highest_mt = mt
@@ -322,18 +322,18 @@ class WpsRegistrar:
                 nonce_e = p.attrs.get(M.ATTR_ENROLLEE_NONCE)
                 mac_e = p.attrs.get(M.ATTR_MAC_ADDR, self.bssid)
                 if not pke or not nonce_e:
-                    return _out(PinResult.PROTO_ERROR, detail="M1 missing PKe/nonce")
+                    return _out(PinResult.PROTO_ERROR, detail="M1 缺少 PKe/nonce")
                 shared = wc.dh_shared_secret(pke, priv)
                 authkey, keywrapkey, _ = wc.derive_keys(shared, nonce_e, mac_e, nonce_r)
                 psk1, psk2 = wc.derive_psk(authkey, pin)
                 m2 = M.build_m2(nonce_e, nonce_r, uuid_r, pkr, authkey, p.raw_wsc_attrs,
                                 self.rf_bands, self.wsc_2_0)
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_MSG, m2))
-                self.log(f"[WPS] <- M1 (id {p.eap_id}, {len(p.raw_wsc_attrs)}B); -> M2")
+                self.log(f"[WPS] <- M1（id {p.eap_id}，{len(p.raw_wsc_attrs)}B）；-> M2")
 
             elif mt == M.WPS_M3:
                 if authkey is None:
-                    return _out(PinResult.PROTO_ERROR, detail="M3 before keys")
+                    return _out(PinResult.PROTO_ERROR, detail="在密钥派生之前收到 M3")
                 e_hash1 = p.attrs.get(M.ATTR_E_HASH1)
                 e_hash2 = p.attrs.get(M.ATTR_E_HASH2)
                 if e_hash1 and e_hash2:
@@ -342,7 +342,7 @@ class WpsRegistrar:
                                 authkey, keywrapkey, p.raw_wsc_attrs, self.wsc_2_0)
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_MSG, m4))
                 last_sent = "M4"
-                self.log(f"[WPS] <- M3 (id {p.eap_id}); -> M4 (revealing R-S1, testing first half)")
+                self.log(f"[WPS] <- M3（id {p.eap_id}）；-> M4（公开 R-S1，测试前半段）")
 
             elif mt == M.WPS_M5:
                 # First half accepted. Reveal R-S2 in M6 to test the second half.
@@ -350,11 +350,11 @@ class WpsRegistrar:
                                 self.wsc_2_0)
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_MSG, m6))
                 last_sent = "M6"
-                self.log(f"[WPS] <- M5 (id {p.eap_id}) -> first half CORRECT; -> M6 (testing second half)")
+                self.log(f"[WPS] <- M5（id {p.eap_id}）-> 前半段正确；-> M6（测试后半段）")
 
             elif mt == M.WPS_M7:
                 ssid, psk = self._extract_psk(p, keywrapkey)
-                self.log(f"[WPS] <- M7 (id {p.eap_id}) -> SUCCESS; PSK={psk!r}")
+                self.log(f"[WPS] <- M7（id {p.eap_id}）-> 成功；PSK={psk!r}")
                 # Tear the session down politely (best-effort).
                 nack = M.build_wsc_nack(nonce_e, nonce_r)
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_NACK, nack))
@@ -363,11 +363,11 @@ class WpsRegistrar:
             else:
                 # M2D or unexpected: treat as a setup rejection (often a lock).
                 if mt == M.WPS_M2D:
-                    return _out(PinResult.PROTO_ERROR, detail="M2D (AP has no registrar)")
-                self.log(f"[WPS] <- unexpected msg_type=0x{mt:02x}, ignoring")
+                    return _out(PinResult.PROTO_ERROR, detail="M2D（AP 没有注册器）")
+                self.log(f"[WPS] <- 意外的 msg_type=0x{mt:02x}，忽略")
                 continue
 
-        return _out(PinResult.TIMEOUT, detail="no reply (stalled)")
+        return _out(PinResult.TIMEOUT, detail="无响应（停滞）")
 
     @staticmethod
     def _extract_psk(p, keywrapkey):

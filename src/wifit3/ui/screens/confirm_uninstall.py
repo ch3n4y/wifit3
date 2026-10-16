@@ -23,24 +23,23 @@ from textual.widgets import Button, Label
 # rebinds the card on its next replug.
 _BODY = {
     "win": (
-        "This removes the WinUSB driver wifit3 installed for [bold]{name}[/], so Windows "
-        "sees it as a normal wireless adapter again.\n[dim]You can re-install it any time "
-        "with START.[/dim]"),
+        "这会移除 wifit3 为 [bold]{name}[/] 安装的 WinUSB 驱动，Windows 会重新把它"
+        "识别为普通无线网卡。\n[dim]随时可按「开始」重新安装。[/dim]"),
     "linux": (
-        "This uninstalls Wifit3's udev and modprobe rules for the [bold]{name}[/].\n\n"
-        "[dim]The card returns to normal on the next unplug/replug.[/dim]"),
+        "这会卸载 Wifit3 为 [bold]{name}[/] 设置的 udev 与 modprobe 规则。\n\n"
+        "[dim]网卡会在下次拔出/重新插入后恢复正常。[/dim]"),
 }
 
 _TITLE = {
-    "win": "Uninstall wifit3 driver?",
-    "linux": "Uninstall Wifit3's udev + modprobe rules?",
+    "win": "卸载 wifit3 驱动？",
+    "linux": "卸载 Wifit3 的 udev + modprobe 规则？",
 }
 
 
 class ConfirmUninstallDialog(ModalScreen[str | None]):
     BINDINGS = [
-        Binding("n", "cancel", "Cancel", show=True),
-        Binding("escape", "cancel", "Cancel", show=True),
+        Binding("n", "cancel", "取消", show=True),
+        Binding("escape", "cancel", "取消", show=True),
     ]
 
     DEFAULT_CSS = """
@@ -79,12 +78,12 @@ class ConfirmUninstallDialog(ModalScreen[str | None]):
             # rule(s), so a narrow removal won't free it. Name the blockers; the button counts make
             # the two radii self-explanatory.
             return (base +
-                    f"\n\n[$text-warning]The kernel module is also blocked by {n} other "
-                    f"rule{'s' if n != 1 else ''}:[/]\n{others}")
+                    f"\n\n[$text-warning]该内核模块同时还被另外 {n} 条规则"
+                    f"占用：[/]\n{others}")
         # Card has no rules of its own: the block is a sibling's rules. Frame the action around what
         # actually gets removed (the sibling rules), not "this card", which has nothing to remove.
-        return (f"The card returns to normal (kernel-bound) on the next replug.\n\n"
-                f"Remove wifit3's {n} udev + modprobe rule{'s' if n != 1 else ''} for {others}?")
+        return (f"网卡会在下次重新插入后恢复正常（由内核接管）。\n\n"
+                f"是否移除 wifit3 为 {others} 设置的 {n} 条 udev + modprobe 规则？")
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
@@ -93,15 +92,15 @@ class ConfirmUninstallDialog(ModalScreen[str | None]):
             with Horizontal(id="button-row"):
                 total = 1 + len(self._siblings)
                 if self._siblings and self._has_own:
-                    yield Button(f"Remove {self._name} (1)", variant="primary", id="btn-narrow")
-                    yield Button(f"Remove All ({total})", variant="primary", id="btn-wide")
+                    yield Button(f"移除 {self._name} (1)", variant="primary", id="btn-narrow")
+                    yield Button(f"移除全部 ({total})", variant="primary", id="btn-wide")
                 elif self._siblings:                       # blocked-by-sibling, nothing of its own
                     sn = len(self._siblings)
-                    yield Button(f"Remove {sn} Rule{'s' if sn != 1 else ''}",
+                    yield Button(f"移除 {sn} 条规则",
                                  variant="primary", id="btn-wide")
                 else:                                      # plain single-card uninstall
-                    yield Button("Uninstall", variant="primary", id="btn-narrow")
-                yield Button("Cancel", variant="default", id="btn-cancel")
+                    yield Button("卸载", variant="primary", id="btn-narrow")
+                yield Button("取消", variant="default", id="btn-cancel")
 
     def on_mount(self) -> None:
         self.query_one("#btn-cancel", Button).focus()  # default to the safe choice

@@ -28,7 +28,7 @@ async def test_scanner_capture_win_raises_toast():
                           value="6162636465")   # hex "abcde"
         scanner._log_capture_event(ev, ap)
 
-        assert ("WEP key recovered", 'dd-wrt: 6162636465 = "abcde"') in toasts, toasts
+        assert ("已恢复 WEP 密钥", 'dd-wrt: 6162636465 = "abcde"') in toasts, toasts
 
 
 @pytest.mark.asyncio

@@ -45,7 +45,7 @@ class WpsPbcCapture(Campaign):
         return "● WPS PBC"
 
     def status_headlines(self, vault) -> list[str]:
-        return ["[bold green]● WPS PushButton[/bold green] window: capturing PSK"]
+        return ["[bold green]● WPS 按钮模式[/bold green] 窗口：正在捕获 PSK"]
 
     def __init__(self, array, target, our_mac: Optional[bytes] = None, log=None,
                  tx_observer=None):
@@ -69,9 +69,9 @@ class WpsPbcCapture(Campaign):
     async def capture(self) -> AttemptOutcome:
         """One PBC enrollment attempt. Returns the WpsEnrollee outcome."""
         if self.stopped:
-            return AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="stopped before start")
+            return AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="开始前已停止")
         if self.iface is None:
-            return AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="no card can reach channel")
+            return AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="没有网卡能到达该信道")
         # The lease arms active-monitor + own-MAC registration + ACK tally on enter, and
         # clears all three (and restores the channel) on exit.
         lease = self.array.lease(channel=self.channel, fake_mac=self.our_mac,
@@ -88,17 +88,17 @@ class WpsPbcCapture(Campaign):
             warning = iface.active_monitor_warning()
             if isinstance(warning, str):
                 self.log(warning)
-                self.log("[dim]Continuing anyway (expect failures/timeouts)[/dim]")
+                self.log("[dim]仍将继续（可能出现失败/超时）[/dim]")
             transport = WlanTransport(iface, str_to_mac(self.bssid), self.our_mac,
                                       tx_observer=self.tx_observer)
             transport.start()
             outcome = None
             try:
                 if self.stopped:
-                    outcome = AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="stopped by user")
+                    outcome = AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="用户已停止")
                 else:
                     if not await assoc.associate():
-                        self.log(f"assoc failed ({assoc.fail_reason}); running EAPOL anyway")
+                        self.log(f"关联失败（{assoc.fail_reason}）；仍继续运行 EAPOL")
                     outcome = await WpsEnrollee(transport, str_to_mac(self.bssid),
                                                 self.our_mac, channel=self.channel,
                                                 wsc_2_0=wsc_2_0, log=self.log,

@@ -201,7 +201,7 @@ class WepArpReplay:
         if cand is not self._winner:
             self.stats.candidates_tried += 1
         self._log(
-            f"[bold green]ARP Replay:[/bold green] Testing candidate packet "
+            f"[bold green]ARP 重放：[/bold green] 正在测试候选数据包 "
             f"({len(cand)} B)…"
         )
 
@@ -339,7 +339,7 @@ class WepArpReplay:
             if stalled > self._STALL_REAUTH_AFTER and not self._reauth_requested:
                 self._reauth_requested = True
                 self._request_reauth()
-                self._log("[yellow]ARP replay stalled: re-authenticating[/yellow]")
+                self._log("[yellow]ARP 重放停滞：正在重新认证[/yellow]")
             if stalled > self._STALL_DEMOTE_AFTER:
                 self._winner = None
                 self._current = None
@@ -354,11 +354,11 @@ class WepArpReplay:
             self.stats.has_winner = True
             self._failed.discard(self._current)
             self._log(treelog.branch_ok(
-                f"Candidate packet ({len(self._current)} B) is "
-                "[bold green]replayable[/bold green]"
+                f"候选数据包 ({len(self._current)} B) "
+                "[bold green]可重放[/bold green]"
             ))
             self._log(treelog.leaf_ok(
-                "[bold green]ARP Replaying now[/bold green] [dim]for IVs[/dim]"
+                "[bold green]ARP 正在重放[/bold green] [dim]获取 IV[/dim]"
             ))
         elif (time.time() - self._trial_started) >= self._TRIAL_WINDOW:
             failed_len = len(self._current)
@@ -367,8 +367,8 @@ class WepArpReplay:
             self.stats.candidates_failed = len(self._failed)
             self._current = None
             self._log(treelog.leaf_fail(
-                f"[yellow]failed to replay ({failed_len} B)[/yellow] "
-                "[dim](AP never echoed it)[/dim]"
+                f"[yellow]重放失败 ({failed_len} B)[/yellow] "
+                "[dim](AP 从未回显)[/dim]"
             ))
 
     def _reset_rate_search(self) -> None:
@@ -424,5 +424,5 @@ class WepArpReplay:
             return
         self._last_state = state
         if state == "waiting-arp":
-            self._log("[bold green]ARP Replay:[/bold green] waiting for ARP")
+            self._log("[bold green]ARP 重放：[/bold green] 等待 ARP")
 

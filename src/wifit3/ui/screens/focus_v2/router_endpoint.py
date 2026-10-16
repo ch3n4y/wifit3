@@ -73,7 +73,7 @@ class RouterEndpoint(Vertical):
             yield identity
             probe = Button(self._probe_icon(), id="ap-probe")
             probe.display = self._wps and not self._has_m1
-            probe.tooltip = "Cancel WPS/WSC probe" if self._probing else "Probe AP for WPS/WSC attributes"
+            probe.tooltip = "取消 WPS/WSC 探测" if self._probing else "探测 AP 的 WPS/WSC 属性"
             probe.disabled = False if self._probing else self._probe_disabled
             yield probe
 
@@ -98,7 +98,7 @@ class RouterEndpoint(Vertical):
         probe_btn.display = show_probe
         if show_probe:
             probe_btn.label = self._probe_icon()
-            probe_btn.tooltip = "Cancel WPS/WSC probe" if probing else "Probe AP for WPS/WSC attributes"
+            probe_btn.tooltip = "取消 WPS/WSC 探测" if probing else "探测 AP 的 WPS/WSC 属性"
             probe_btn.disabled = False if probing else probe_disabled
 
         self._push("#ap-identity", self._identity_label())
@@ -141,11 +141,11 @@ class RouterEndpoint(Vertical):
 
     def _identity_label(self) -> str:
         if not self._wps:
-            return f"channel {self._channel}"
+            return f"信道 {self._channel}"
         if self._has_m1:
-            text = self._identity or f"channel {self._channel}"
+            text = self._identity or f"信道 {self._channel}"
             return self._truncate(text, 20)
-        text = self._identity or f"ch {self._channel}"
+        text = self._identity or f"信道 {self._channel}"
         return self._truncate(text, 16)
 
     def _probe_icon(self) -> str:
@@ -156,8 +156,8 @@ class RouterEndpoint(Vertical):
         """The ESSID as a black-on-cyan chip so it pops as the AP's identity (it
         kept blending in as plain bold white). A cloaked AP stays a dim italic
         marker: no chip on a name we don't have."""
-        if essid == "‹hidden›":
-            return "[dim italic]‹hidden›[/dim italic]"
+        if essid == "‹隐藏›":
+            return "[dim italic]‹隐藏›[/dim italic]"
         return f"[black bold on cyan] {escape(essid)} [/black bold on cyan]"
 
     def _power_line(self) -> Text:

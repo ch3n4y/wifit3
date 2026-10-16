@@ -212,10 +212,10 @@ class WepChopChop:
             self._bytes_done = 0
             self._bytes_total = len(cipher) - _CHOP_FLOOR
             # Group header (plain) + a detail branch
-            self._log("[bold cyan]ChopChop:[/bold cyan] forging packet…")
+            self._log("[bold cyan]ChopChop：[/bold cyan] 正在伪造数据包…")
             self._log(treelog.branch(
-                f"[dim]{len(cipher)}B cipher, ~{self._bytes_total} bytes to "
-                f"recover[/dim]"
+                f"[dim]{len(cipher)}B 密文，约 {self._bytes_total} 字节"
+                f"待恢复[/dim]"
             ))
             return cipher
         return None
@@ -240,8 +240,8 @@ class WepChopChop:
             guess = await self._probe(body)
             if guess == _SENTINEL:
                 self._log(treelog.leaf_fail(
-                    "[red]AP forwards bad-ICV frames[/red] [dim](not vulnerable "
-                    "to chopchop in this mode)[/dim]"
+                    "[red]AP 会转发 ICV 错误的帧[/red] [dim]（此模式下 "
+                    "ChopChop 无法生效）[/dim]"
                 ))
                 return None
             if guess is None:
@@ -381,8 +381,8 @@ class WepChopChop:
                     # or it isn't vulnerable: blacklist this seed, try another.
                     # Keep retrying (never auto-stop), per the design.
                     self._log(treelog.leaf_fail(
-                        "[yellow]couldn't recover from this seed[/yellow] "
-                        "[dim](trying another)[/dim]"
+                        "[yellow]无法从此种子恢复[/yellow] "
+                        "[dim](换一个重试)[/dim]"
                     ))
                     self._tried.add(self._cur_iv)
                     continue
@@ -442,8 +442,8 @@ class WepChopChop:
         if wall_l <= _IP_MAX_WALL:
             if wall_l > _CHOP_FLOOR:
                 self._log(treelog.branch(
-                    "[dim]not an ARP: reconstructing the IP header "
-                    "(offline CRC search)…[/dim]"
+                    "[dim]不是 ARP：正在重建 IP 头 "
+                    "(离线 CRC 搜索)…[/dim]"
                 ))
             totlen = n - 12                # IP datagram length (see module notes)
             base = _KNOWN_SNAP + _ETHERTYPE_IP                  # bytes 0..7
@@ -464,8 +464,8 @@ class WepChopChop:
         tagged candidates, and read back the one that relays. ``ks`` must be
         known for every forged-ARP position except ``p``."""
         self._log(treelog.branch(
-            "[dim]drop-short wall: recovering the boundary byte from the AP "
-            "(256 forged ARPs)…[/dim]"
+            "[dim]遇到截断墙：向 AP 恢复边界字节 "
+            "(256 个伪造 ARP)…[/dim]"
         ))
         plain = arp_request_plaintext(
             sender_mac=self.source_mac,
@@ -501,7 +501,7 @@ class WepChopChop:
     def _succeed(self, forged: bytes) -> None:
         self._set_state("success")
         self._log(treelog.leaf_ok(
-            "[bold green]ChopChop packet forged[/bold green] [dim](broadcast ARP)[/dim]"
+            "[bold green]ChopChop 数据包已伪造[/bold green] [dim](广播 ARP)[/dim]"
         ))
         # Immediate handoff (mirrors frag): stop, hand the forged ARP over.
         self._active = False
@@ -515,7 +515,7 @@ class WepChopChop:
 
     def _set_state(self, state: str) -> None:
         if state == "seeding" and self.state != "seeding":
-            self._log("[bold cyan]ChopChop:[/bold cyan] waiting for ARP or IP frame…")
+            self._log("[bold cyan]ChopChop：[/bold cyan] 等待 ARP 或 IP 帧…")
         self.state = state
 
     def _maybe_heartbeat(self) -> None:
@@ -525,6 +525,6 @@ class WepChopChop:
         self._last_heartbeat = now
         if self.state == "chopping":
             self._log(treelog.branch(
-                f"[dim]byte[/dim] {self._bytes_done}/{self._bytes_total}"
-                f" [dim]recovered…[/dim]"
+                f"[dim]字节[/dim] {self._bytes_done}/{self._bytes_total}"
+                f" [dim]已恢复…[/dim]"
             ))

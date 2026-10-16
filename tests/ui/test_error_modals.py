@@ -29,7 +29,7 @@ async def test_device_lost_from_offloop_context_shows_recoverable_modal():
         await pilot.pause(0)
         await pilot.pause(0)
         assert isinstance(app.screen, RecoverableErrorModal)
-        assert app.screen._error.title == "Adapter disconnected"
+        assert app.screen._error.title == "网卡已断开"
 
 
 @pytest.mark.asyncio
@@ -43,7 +43,7 @@ async def test_no_usb_backend_shows_fatal_modal(monkeypatch):
         await pilot.pause(0)   # on_mount -> poll_usb fires, should catch and push the modal
         await pilot.pause(0)
         assert isinstance(app.screen, FatalErrorModal)
-        assert app.screen._error.title == "USB backend unavailable"
+        assert app.screen._error.title == "USB 后端不可用"
         assert "libusb" in app.screen._error.message
         assert app.screen._error.trace.strip()      # non-empty, pasteable
 

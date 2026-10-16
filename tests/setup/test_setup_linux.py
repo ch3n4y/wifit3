@@ -110,7 +110,7 @@ async def test_install_rule_failure_reports_error(monkeypatch):
     monkeypatch.setattr(lin, "install_rule", lambda *a, **k: _Result(ok=False, message="boom"))
     ui = FakePrompter()
     assert await lin.SetupLinux().install(_DEV, ui) is None
-    assert ui.errors and ui.errors[0][0] == "Couldn't install the device rules"
+    assert ui.errors and ui.errors[0][0] == "无法安装设备规则"
 
 
 async def test_install_cancelled_elevation_shows_no_error(monkeypatch):
@@ -127,7 +127,7 @@ async def test_install_access_never_takes_effect(monkeypatch):
     monkeypatch.setattr(lin.SetupLinux, "_wait_for_access", _access_never)
     ui = FakePrompter()
     assert await lin.SetupLinux().install(_DEV, ui) is None
-    assert ui.errors and "didn't take effect" in ui.errors[0][0]
+    assert ui.errors and "未生效" in ui.errors[0][0]
 
 
 async def test_install_unsupported_chipset(monkeypatch):
@@ -143,7 +143,7 @@ async def test_uninstall_nothing_installed(monkeypatch):
     monkeypatch.setattr(lin, "target_for_vidpid", lambda v, p: _target())
     monkeypatch.setattr(lin, "plan_uninstall", lambda t: _Plan(removable=False))
     res = await lin.SetupLinux().uninstall(_DEV, FakePrompter())
-    assert res.ok and "No wifit3 rules" in res.message
+    assert res.ok and "未安装 wifit3 规则" in res.message
 
 
 async def test_uninstall_cancelled(monkeypatch):
@@ -181,7 +181,7 @@ async def test_uninstall_not_revoked_message(monkeypatch):
     monkeypatch.setattr(lin, "remove_rule", lambda *a, **k: _Result(ok=True, message="removed"))
     monkeypatch.setattr(lin.SetupLinux, "_wait_for_access", _access_never)
     res = await lin.SetupLinux().uninstall(_DEV, FakePrompter(ask="narrow"))
-    assert res.ok and "fully revoke access" in res.message
+    assert res.ok and "完全撤销访问权限" in res.message
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="os.geteuid is POSIX-only")

@@ -21,7 +21,7 @@ _STATUS_STYLE = {
 
 # Badge text override; a wordlist miss (FAILURE) reads better as "NOT FOUND".
 _STATUS_LABEL = {
-    ToolStatus.FAILURE: "NOT FOUND",
+    ToolStatus.FAILURE: "未找到",
 }
 
 
@@ -34,7 +34,7 @@ class JobActionButton(Button):
     def sync(self, job: JobState) -> None:
         """Match the button's label + colour to the job's current state."""
         self.is_active = job.status in (ToolStatus.RUNNING, ToolStatus.QUEUED)
-        self.label = "Kill" if self.is_active else "Clear"
+        self.label = "终止" if self.is_active else "清除"
         self.variant = "error" if self.is_active else "default"
 
 
@@ -78,7 +78,7 @@ class JobRow(Horizontal):
     def _detail_markup(self, job: JobState) -> str:
         if job.status == ToolStatus.SUCCESS:
             key = self._cracked_key(job.progress_msg)
-            return f"PSK: [black bold on lightgreen] {escape(key)} [/]" if key else ""
+            return f"PSK：[black bold on lightgreen] {escape(key)} [/]" if key else ""
         if job.status in (ToolStatus.FAILURE, ToolStatus.ERROR):
             return f"[dim]{escape(job.progress_msg)}[/dim]"
         return ""
@@ -152,6 +152,6 @@ class JobTrackerPane(Widget):
             return
         if button.is_active:
             self.app.kill_job(button.job_id)
-            self.notify("Killing job.")
+            self.notify("正在终止任务。")
         else:
             self.app.clear_job(button.job_id)

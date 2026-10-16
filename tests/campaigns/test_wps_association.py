@@ -103,7 +103,7 @@ def test_rx_cb_sets_auth_ok_on_status0_resp():
     a._auth_ok = False
     a._rx_cb(WlanFrameParser.parse_80211_frame(_auth_resp(1), -40))            # status != 0 → not ok, records reason
     assert a._auth_ok is False
-    assert "Auth rejected" in (a.fail_reason or "")
+    assert "认证被拒绝" in (a.fail_reason or "")
     assert "unspecified-failure" in (a.fail_reason or "")
 
 

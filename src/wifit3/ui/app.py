@@ -46,8 +46,8 @@ class WifiteApp(App):
 
     ENABLE_COMMAND_PALETTE = False
     BINDINGS = [
-        Binding("ctrl+p", "preferences", "Prefs"),
-        Binding("v", "toggle_vault", "Vault")
+        Binding("ctrl+p", "preferences", "偏好设置"),
+        Binding("v", "toggle_vault", "保险库")
     ]
 
     CSS = """
@@ -142,21 +142,21 @@ class WifiteApp(App):
             return
         self.copy_to_clipboard(selected)
         chars = len(selected)
-        noun = "char" if chars == 1 else "chars"
-        self.notify(f"Copied {chars} {noun} to clipboard")
+        noun = "个字符" if chars == 1 else "个字符"
+        self.notify(f"已复制 {chars} {noun}到剪贴板")
 
     def persist_config(self) -> None:
         try:
             Config.save()
         except ConfigError as e:
-            self.notify(str(e), severity="error", title="Config")
+            self.notify(str(e), severity="error", title="配置错误")
 
     def on_mount(self) -> None:
         """Register screens, push the splash, and start the always-on device watch."""
         if self._config_error:
-            self.notify(self._config_error, severity="error", title="Config")
+            self.notify(self._config_error, severity="error", title="配置错误")
         for msg in self.vault.errors:
-            self.notify(msg, severity="warning", title="Vault")
+            self.notify(msg, severity="warning", title="保险库")
         self.install_screen(SplashView(), name="splash")
         self.install_screen(ScannerView(), name="scanner")
         self.install_screen(FocusViewV2(), name="focus")
@@ -200,11 +200,11 @@ class WifiteApp(App):
         if job.status == ToolStatus.SUCCESS:
             msg = job.progress_msg
             key = msg.split("Key:", 1)[1].strip() if "Key:" in msg else msg
-            self.notify(f"SUCCESS  PSK: {key}", title=job.display_name, severity="information")
+            self.notify(f"成功  PSK: {key}", title=job.display_name, severity="information")
         elif job.status == ToolStatus.FAILURE:
-            self.notify(f"NOT FOUND  {job.progress_msg}", title=job.display_name, severity="warning")
+            self.notify(f"未找到  {job.progress_msg}", title=job.display_name, severity="warning")
         else:
-            self.notify(f"ERROR  {job.progress_msg}", title=job.display_name, severity="error")
+            self.notify(f"错误  {job.progress_msg}", title=job.display_name, severity="error")
 
     def kill_job(self, job_id: str) -> None:
         """Kill a running job, then refresh the tracker immediately."""
@@ -247,7 +247,7 @@ class WifiteApp(App):
                     if res.status is Status.FAILED:
                         self.notify(res.message, severity="error")
                     elif res.status is Status.READY:
-                        self.notify(f"{dev.description} added", severity="information")
+                        self.notify(f"{dev.description} 已添加", severity="information")
         finally:
             self.device_watch.resume()
 
@@ -268,13 +268,13 @@ class WifiteApp(App):
     def _show_device_lost(self, exc: Exception, remaining: int) -> None:
         # Survivors remain: keep running, just toast how many are left.
         if remaining > 0:
-            self.notify(f"A wireless card was lost. {remaining} still active.",
-                        title="Card unplugged", severity="warning")
+            self.notify(f"一块无线网卡已丢失。仍有 {remaining} 块可用。",
+                        title="网卡已拔出", severity="warning")
             return
         # Last card gone: fall back to the recoverable modal → splash.
         if isinstance(self.screen, (FatalErrorModal, RecoverableErrorModal)):
             return
-        self.push_screen(RecoverableErrorModal(WifiteDeviceLostError("the wireless adapter")))
+        self.push_screen(RecoverableErrorModal(WifiteDeviceLostError("无线网卡")))
 
     async def recover_to_splash(self) -> None:
         """Return to the splash screen after the last card was lost."""

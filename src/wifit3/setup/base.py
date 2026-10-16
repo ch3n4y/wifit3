@@ -93,4 +93,4 @@ class NoSetup(Setup):
         return None
 
     async def uninstall(self, device_id: DeviceID, ui: Prompter) -> SetupResult:
-        return SetupResult(ok=True, message="No device setup is needed on this platform.")
+        return SetupResult(ok=True, message="此平台无需设备设置。")

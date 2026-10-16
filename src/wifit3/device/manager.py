@@ -223,21 +223,21 @@ def _raise_usblib_fatal(cause: Exception) -> NoReturn:
     # pyusb's NoBackendError is opaque.
     if sys.platform.startswith("linux"):
         message = (
-            "The bundled libusb could not be loaded. A system dependency is missing.\n\n"
-            "Install it for your architecture and replug the card:\n"
+            "内置的 libusb 无法加载：缺少系统依赖。\n\n"
+            "请按你的发行版安装后重新插拔网卡：\n"
             "  Debian / Ubuntu / Kali:   sudo apt install libudev1\n"
             "  Fedora / RHEL:            sudo dnf install systemd-libs\n"
             "  Arch:                     sudo pacman -S systemd-libs")
     elif sys.platform == "darwin":
         message = (
-            "The bundled libusb failed to load. Reinstall wifit3: the install is likely corrupt. "
-            "If it persists, check that the Mac's architecture (Apple Silicon / Intel) matches "
-            "the installed package.")
+            "内置的 libusb 加载失败。请重新安装 wifit3：安装很可能已损坏。"
+            "若问题依旧，请确认 Mac 的架构（Apple Silicon / Intel）与"
+            "所安装的软件包一致。")
     else:
         message = (
-            "The bundled libusb failed to initialize. Reinstall wifit3: the install is likely "
-            "corrupt or being blocked by security software.")
-    raise WifiteFatalError("USB backend unavailable", message) from cause
+            "内置的 libusb 初始化失败。请重新安装 wifit3：安装很可能已损坏，"
+            "或被安全软件拦截。")
+    raise WifiteFatalError("USB 后端不可用", message) from cause
 
 
 def _bus_devices(backend) -> List[usb.core.Device]:

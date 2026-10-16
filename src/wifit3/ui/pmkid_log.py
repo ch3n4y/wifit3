@@ -16,19 +16,19 @@ from typing import Optional
 from wifit3.campaigns import treelog
 from wifit3.campaigns.pmkid import PmkidFail
 
-_M1_DIR = "AP→Client"
-_REQ_DIR = "Client→AP"
-_EXTRACTED = "[black bold on green] ✓ PMKID Extracted [/black bold on green]"
+_M1_DIR = "AP→客户端"
+_REQ_DIR = "客户端→AP"
+_EXTRACTED = "[black bold on green] ✓ 已提取 PMKID [/black bold on green]"
 
 # reason -> (styled headline markup, dim parenthetical why).
 _FAIL_LEAF = {
-    PmkidFail.NO_KDE:       ("[black bold on orange1] No PMKID in M1 [/black bold on orange1]",
-                             "AP does not send PMKID in M1"),
-    PmkidFail.NO_RESPONSE:  ("[bold bright_red]M1 not received[/bold bright_red]", "AP did not respond"),
-    PmkidFail.PMF_REQUIRED: ("[bold orange1]PMF Required[/bold orange1]",
-                             "AP only associates protected clients"),
-    PmkidFail.NO_PSK_AKM:   ("[bold orange1]No PSK AKM[/bold orange1]",
-                             "nothing to harvest, e.g. SAE-only"),
+    PmkidFail.NO_KDE:       ("[black bold on orange1] M1 中无 PMKID [/black bold on orange1]",
+                             "AP 不在 M1 中发送 PMKID"),
+    PmkidFail.NO_RESPONSE:  ("[bold bright_red]未收到 M1[/bold bright_red]", "AP 未响应"),
+    PmkidFail.PMF_REQUIRED: ("[bold orange1]需要 PMF[/bold orange1]",
+                             "AP 只关联受保护的客户端"),
+    PmkidFail.NO_PSK_AKM:   ("[bold orange1]无 PSK AKM[/bold orange1]",
+                             "无可收集内容，例如仅 SAE"),
 }
 
 # Reasons reached only AFTER we transmit Auth+Assoc, so their tree echoes those
@@ -37,24 +37,24 @@ _AFTER_TX = (PmkidFail.NO_RESPONSE, PmkidFail.NO_KDE)
 
 
 def header(essid: str) -> str:
-    return f"[bold]Harvesting PMKID[/bold] from [bold cyan]{essid}[/bold cyan]"
+    return f"[bold]正在收集 PMKID[/bold] 来自 [bold cyan]{essid}[/bold cyan]"
 
 
 def auth_req() -> str:
-    return treelog.branch(f"Auth request ({_REQ_DIR})")
+    return treelog.branch(f"认证请求 ({_REQ_DIR})")
 
 
 def assoc_req() -> str:
-    return treelog.branch(f"Assoc. request ({_REQ_DIR})")
+    return treelog.branch(f"关联请求 ({_REQ_DIR})")
 
 
 def m1(has_pmkid: bool) -> str:
     tick = "[green]✓[/green]" if has_pmkid else "[red]✗[/red]"
-    return treelog.branch(f"M1 Message ({_M1_DIR}) PMKID{tick}")
+    return treelog.branch(f"M1 消息 ({_M1_DIR}) PMKID{tick}")
 
 
 def _fail_leaf(reason: Optional[PmkidFail]) -> str:
-    head, why = _FAIL_LEAF.get(reason, ("[bold orange1]Harvest failed[/bold orange1]", ""))
+    head, why = _FAIL_LEAF.get(reason, ("[bold orange1]收集失败[/bold orange1]", ""))
     tail = f" [dim]({why})[/dim]" if why else ""
     return treelog.leaf(f"{head}{tail}")
 

@@ -91,8 +91,8 @@ class SplashView(Screen):
     app: "WifiteApp"
 
     BINDINGS = [
-        ("q", "app.quit", "Quit"),
-        Binding("enter", "enter", "Start", priority=True),
+        ("q", "app.quit", "退出"),
+        Binding("enter", "enter", "开始", priority=True),
     ]
 
     def __init__(self):
@@ -107,7 +107,7 @@ class SplashView(Screen):
             with Center():
                 yield Static(self._logo(), id="ascii-art")
             with Center():
-                yield Label("Scanning for compatible hardware…", id="status-label")
+                yield Label("正在扫描兼容硬件…", id="status-label")
             with Center():
                 # Persistent failure line. render_devices only touches #status-label, so an error
                 # parked here survives the next device refresh (the status line gets overwritten).
@@ -119,9 +119,9 @@ class SplashView(Screen):
                     yield ListView(id="device-list")
                     yield SelectionList(id="device-select")
                     with Vertical(id="button-col"):
-                        yield Button("START", id="start-btn", variant="success")
+                        yield Button("开始", id="start-btn", variant="success")
                         # Reverses wifit3's driver/access changes for the highlighted card.
-                        yield Button("Uninstall", id="uninstall-btn", variant="error")
+                        yield Button("卸载", id="uninstall-btn", variant="error")
         yield GlobalJobTracker()
         yield Footer()
 
@@ -153,7 +153,7 @@ class SplashView(Screen):
         multi_list.display = False
         self.query_one("#start-btn", Button).disabled = True
         self.query_one("#uninstall-btn", Button).disabled = True
-        self.query_one("#status-label", Label).update("Scanning for compatible hardware…")
+        self.query_one("#status-label", Label).update("正在扫描兼容硬件…")
 
     async def on_mount(self) -> None:
         uninstall = self.query_one("#uninstall-btn", Button)
@@ -161,8 +161,8 @@ class SplashView(Screen):
             # macOS has no install step, so there's nothing to uninstall.
             uninstall.display = False
         else:
-            hint = "the WinUSB driver" if sys.platform == "win32" else "the udev/modprobe rules"
-            uninstall.tooltip = f"Uninstall {hint} for the highlighted card"
+            hint = "WinUSB 驱动" if sys.platform == "win32" else "udev/modprobe 规则"
+            uninstall.tooltip = f"卸载高亮网卡的 {hint}"
         self.app.theme_changed_signal.subscribe(self, lambda _theme: self.refresh_theme_art())
         self._enter_scanning_mode()
 
@@ -213,7 +213,7 @@ class SplashView(Screen):
                     single_list.index = 0
                 single_list.focus()
         else:
-            status.update("Scanning for compatible hardware…")
+            status.update("正在扫描兼容硬件…")
             start_btn.disabled = True
             uninstall_btn.disabled = True
 
@@ -223,7 +223,7 @@ class SplashView(Screen):
         label = self.query_one("#error-label", Label)
         label.update(f"[bold red]{message}[/bold red]")
         label.display = True
-        self.notify(message, title="Card bring-up failed", severity="error")
+        self.notify(message, title="网卡初始化失败", severity="error")
 
     def _clear_error(self) -> None:
         label = self.query_one("#error-label", Label)
@@ -235,8 +235,8 @@ class SplashView(Screen):
 
     def _ready_prompt(self) -> str:
         """The 'ready to go' status line: only 2+ cards need a 'select' step, one card is pre-armed."""
-        prefix = "Select card(s) and " if self._using_multi() else ""
-        return f"[bold $text-success]{prefix}Press START to begin scanning[/]"
+        prefix = "选择网卡，然后" if self._using_multi() else ""
+        return f"[bold $text-success]{prefix}按「开始」开始扫描[/]"
 
     def _start_targets(self) -> list:
         """The DeviceIDs to bring up: the checked rows (2+ cards) or the single present card."""
@@ -275,7 +275,7 @@ class SplashView(Screen):
         targets = self._start_targets()
         if not targets:
             if self._devices:                 # 2+ cards present but none checked
-                self.notify("Select at least one card.", severity="warning")
+                self.notify("请至少选择一块网卡。", severity="warning")
             return
         self.perform_start(targets)
 
@@ -339,7 +339,7 @@ class SplashView(Screen):
 
         if pooled > 0:
             if failures:
-                self.notify(f"{len(failures)} card(s) failed to start.", severity="warning")
+                self.notify(f"{len(failures)} 块网卡启动失败。", severity="warning")
             self.app.switch_screen("scanner")
         elif failures:
             self._show_error(failures[-1])
@@ -359,10 +359,10 @@ class SplashView(Screen):
         status = self.query_one("#status-label", Label)
         if res.ok:
             status.update(f"[bold green]{res.message}[/bold green]")
-            self.notify(f"[green]✓[/green] {res.message}", title="Uninstalled",
+            self.notify(f"[green]✓[/green] {res.message}", title="已卸载",
                         severity="information")
         elif res.cancelled:
             status.update(self._ready_prompt())
         else:
-            status.update("[bold red]Uninstall failed.[/bold red]")
-            self.app.push_screen(SetupErrorDialog("Uninstall failed", res.message, res.detail))
+            status.update("[bold red]卸载失败。[/bold red]")
+            self.app.push_screen(SetupErrorDialog("卸载失败", res.message, res.detail))

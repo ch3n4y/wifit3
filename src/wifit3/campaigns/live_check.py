@@ -67,31 +67,31 @@ class LiveKeyVerifier:
         if Campaign.active is not None:
             return VerifyResult(
                 VerifyStatus.ERROR,
-                f"Unable to verify with {ssid}",
-                f"Error: {Campaign.active.key} campaign is active",
+                f"无法验证 {ssid}",
+                f"错误：{Campaign.active.key} 战役正在运行",
             )
 
         if not array or not array.members:
             return VerifyResult(
                 VerifyStatus.ERROR,
-                f"Unable to verify with {ssid}",
-                "Error: No wireless adapter available",
+                f"无法验证 {ssid}",
+                "错误：无可用无线网卡",
             )
 
         ap: Optional[AccessPoint] = array.access_points.get(capture.bssid.lower())
         if ap is None:
             return VerifyResult(
                 VerifyStatus.ERROR,
-                f"Unable to verify with {ssid}",
-                "Error: AP not in range",
+                f"无法验证 {ssid}",
+                "错误：AP 不在范围内",
             )
 
         iface = array.select_iface(ap.channel)
         if iface is None:
             return VerifyResult(
                 VerifyStatus.ERROR,
-                f"Unable to verify with {ssid}",
-                f"Error: No wireless card supports channel {ap.channel}",
+                f"无法验证 {ssid}",
+                f"错误：没有无线网卡支持信道 {ap.channel}",
             )
 
         async with array.claim(iface):
@@ -106,8 +106,8 @@ class LiveKeyVerifier:
                 if not seen:
                     return VerifyResult(
                         VerifyStatus.ERROR,
-                        f"Unable to verify with {ssid}",
-                        f"Error: AP not in range on channel {ap.channel}",
+                        f"无法验证 {ssid}",
+                        f"错误：AP 不在信道 {ap.channel} 范围内",
                     )
 
             our_mac = random_client_mac()
@@ -123,8 +123,8 @@ class LiveKeyVerifier:
                     if capture.pin is None:
                         return VerifyResult(
                             VerifyStatus.ERROR,
-                            f"Unable to verify with {ssid}",
-                            "Error: Stored WPS PIN is missing",
+                            f"无法验证 {ssid}",
+                            "错误：存储的 WPS PIN 缺失",
                         )
                     return await self._verify_wps_pin(iface, ap, capture.pin, our_mac)
                 if mode == CaptureType.WEP:
@@ -132,8 +132,8 @@ class LiveKeyVerifier:
                     return await self._verify_wep_key(iface, array, ap, key, our_mac)
                 return VerifyResult(
                     VerifyStatus.ERROR,
-                    f"Unable to verify with {ssid}",
-                    f"Error: Unsupported credential type {mode}",
+                    f"无法验证 {ssid}",
+                    f"错误：不支持的凭据类型 {mode}",
                 )
             finally:
                 try:
@@ -161,7 +161,7 @@ class LiveKeyVerifier:
     ) -> VerifyResult:
         ssid = ap.ssid or "AP"
         noun = "WPS PSK" if is_wps else "PSK"
-        val_name = "PSK" if is_wps else "Key"
+        val_name = "PSK" if is_wps else "密钥"
 
         trailer = force_psk_akm(ap.rsn_ie or GENERIC_RSN_IE) or GENERIC_RSN_IE
         assoc = Association(
@@ -175,12 +175,12 @@ class LiveKeyVerifier:
         assoc.start()
         try:
             if not await assoc.associate(attempts=2):
-                err = assoc.fail_reason or "association rejected"
+                err = assoc.fail_reason or "关联被拒绝"
                 logger.warning("[%s] Association failed: %s", ssid, err)
                 return VerifyResult(
                     VerifyStatus.ERROR,
-                    f"Unable to verify with {ssid}",
-                    f"Error: {err}",
+                    f"无法验证 {ssid}",
+                    f"错误：{err}",
                 )
         finally:
             assoc.stop()
@@ -200,8 +200,8 @@ class LiveKeyVerifier:
             logger.warning("[%s] AP %s never sent EAPOL M1", ssid, ap.bssid)
             return VerifyResult(
                 VerifyStatus.ERROR,
-                f"Unable to verify with {ssid}",
-                "Error: AP never sent EAPOL M1",
+                f"无法验证 {ssid}",
+                "错误：AP 从未发送 EAPOL M1",
             )
 
         replay = int.from_bytes(m1_pkt.replay_counter, "big") if m1_pkt.replay_counter else 1
@@ -230,15 +230,15 @@ class LiveKeyVerifier:
             logger.info("[%s] <- Received EAPOL M3 from %s: PSK is correct!", ssid, ap.bssid)
             return VerifyResult(
                 VerifyStatus.SUCCESS,
-                f"{noun} verified for {ssid}",
-                f'{val_name} "{psk}" still works',
+                f"{noun} 验证成功：{ssid}",
+                f'{val_name} “{psk}” 仍然有效',
             )
 
         logger.warning("[%s] No EAPOL M3 received from %s (timeout/deauth): PSK is incorrect", ssid, ap.bssid)
         return VerifyResult(
             VerifyStatus.INCORRECT,
-            f"{noun} incorrect for {ssid}",
-            f'{val_name} "{psk}" is incorrect (no M3)',
+            f"{noun} 验证失败：{ssid}",
+            f'{val_name} “{psk}” 不正确（无 M3）',
         )
 
     async def _verify_wps_pin(
@@ -263,12 +263,12 @@ class LiveKeyVerifier:
         transport.start()
         try:
             if not await assoc.associate(attempts=2):
-                err = assoc.fail_reason or "association rejected"
+                err = assoc.fail_reason or "关联被拒绝"
                 logger.warning("[%s] WPS Association failed: %s", ssid, err)
                 return VerifyResult(
                     VerifyStatus.ERROR,
-                    f"Unable to verify with {ssid}",
-                    f"Error: {err}",
+                    f"无法验证 {ssid}",
+                    f"错误：{err}",
                 )
             logger.info("[%s] Assoc accepted with WPS IE by %s. Starting WSC session for PIN %s...", ssid, ap.bssid, displayed_pin)
             reg = WpsRegistrar(transport, str_to_mac(ap.bssid), our_mac,
@@ -278,19 +278,19 @@ class LiveKeyVerifier:
             if outcome.result == PinResult.SUCCESS:
                 return VerifyResult(
                     VerifyStatus.SUCCESS,
-                    f"WPS PIN verified for {ssid}",
-                    f'PIN "{displayed_pin}" still works',
+                    f"WPS PIN 验证成功：{ssid}",
+                    f'PIN “{displayed_pin}” 仍然有效',
                 )
             if outcome.result in (PinResult.FIRST_HALF_WRONG, PinResult.SECOND_HALF_WRONG):
                 return VerifyResult(
                     VerifyStatus.INCORRECT,
-                    f"WPS PIN incorrect for {ssid}",
-                    f'PIN "{displayed_pin}" is incorrect',
+                    f"WPS PIN 验证失败：{ssid}",
+                    f'PIN “{displayed_pin}” 不正确',
                 )
             return VerifyResult(
                 VerifyStatus.ERROR,
-                f"Unable to verify with {ssid}",
-                f"Error: {outcome.detail or outcome.result.value}",
+                f"无法验证 {ssid}",
+                f"错误：{outcome.detail or outcome.result.value}",
             )
         finally:
             assoc.stop()
@@ -325,20 +325,20 @@ class LiveKeyVerifier:
             logger.info("[%s] Passive WEP packet decrypted to an LLC/SNAP header: key verified!", ssid)
             return VerifyResult(
                 VerifyStatus.SUCCESS,
-                f"WEP Key verified for {ssid}",
-                f'Key "{key_hex}" still works',
+                f"WEP 密钥验证成功：{ssid}",
+                f'密钥 “{key_hex}” 仍然有效',
             )
 
         assoc = Association(iface, ap.bssid, ap.ssid or "", ap.channel, our_mac=our_mac)
         assoc.start()
         try:
             if not await assoc.associate(attempts=2):
-                err = assoc.fail_reason or "association rejected"
+                err = assoc.fail_reason or "关联被拒绝"
                 logger.warning("[%s] WEP Association failed: %s", ssid, err)
                 return VerifyResult(
                     VerifyStatus.ERROR,
-                    f"Unable to verify with {ssid}",
-                    f"Error: {err}",
+                    f"无法验证 {ssid}",
+                    f"错误：{err}",
                 )
         finally:
             assoc.stop()
@@ -372,13 +372,13 @@ class LiveKeyVerifier:
             logger.info("[%s] <- Relayed FromDS WEP packet decrypted to an LLC/SNAP header: key verified!", ssid)
             return VerifyResult(
                 VerifyStatus.SUCCESS,
-                f"WEP Key verified for {ssid}",
-                f'Key "{key_hex}" still works',
+                f"WEP 密钥验证成功：{ssid}",
+                f'密钥 “{key_hex}” 仍然有效',
             )
 
         logger.warning("[%s] No relayed WEP frame heard after ARP injection (timeout)", ssid)
         return VerifyResult(
             VerifyStatus.INCORRECT,
-            f"WEP Key incorrect for {ssid}",
-            f'Key "{key_hex}" is unconfirmed by AP',
+            f"WEP 密钥验证失败：{ssid}",
+            f'密钥 “{key_hex}” 未得到 AP 确认',
         )

@@ -22,7 +22,7 @@ async def probe_ap(
     """Run applicable active identity probes against an AP on the provided interface."""
     applicable = [p for p in probes if p.can_probe(ap)]
     if not applicable:
-        return ProbeResult(ok=False, detail="no suitable probes for network type")
+        return ProbeResult(ok=False, detail="没有适用于该网络类型的探针")
 
     failures: list[str] = []
     for probe in applicable:

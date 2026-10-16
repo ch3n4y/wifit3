@@ -7,8 +7,8 @@ from __future__ import annotations
 from wifit3.models import DeviceID
 from wifit3.setup.base import Prompter, Setup, SetupResult
 
-_NOOP_MSG = "macOS needs no driver setup. Retrying the connection…"
-_UNINSTALL_MSG = "Nothing is installed on macOS: no driver binding or access rules to remove."
+_NOOP_MSG = "macOS 无需驱动设置。正在重试连接…"
+_UNINSTALL_MSG = "macOS 上未安装任何内容：没有需要移除的驱动绑定或访问规则。"
 
 
 class SetupMacOS(Setup):

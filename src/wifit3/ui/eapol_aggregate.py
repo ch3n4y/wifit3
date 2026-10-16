@@ -32,7 +32,7 @@ from .capture_events import CaptureEvent
 from .capture_log import _eapol_fields
 
 # AP is always drawn on the left; the arrow shows the frame's direction.
-_DIR = {1: "AP→Client", 3: "AP→Client", 2: "AP←Client", 4: "AP←Client"}
+_DIR = {1: "AP→客户端", 3: "AP→客户端", 2: "AP←客户端", 4: "AP←客户端"}
 
 
 def _field_score(ev: CaptureEvent) -> int:
@@ -80,7 +80,7 @@ def _render_tree(client_mac: str, burst: _Burst, hs_ev, instance: int,
     ``save_hint`` (the screen's short 'saved: captures/…' string) closes the tree
     as its terminal leaf, so the save note lives *inside* the handshake tree
     rather than as a stray left-aligned line below it."""
-    header = f"[bold]4-Way Handshake[/bold] [dim]·[/dim] Client: [bold]{client_mac}[/bold]"
+    header = f"[bold]四次握手[/bold] [dim]·[/dim] 客户端：[bold]{client_mac}[/bold]"
     nums = sorted(burst.msgs, key=lambda m: (m == 0, m))   # M1..M4, unclassified last
     label_w = max((len(_msg_label(m, burst.msgs[m].count)) for m in nums), default=0)
     bodies = []
@@ -92,10 +92,10 @@ def _render_tree(client_mac: str, burst: _Burst, hs_ev, instance: int,
 
     lines = [header]
     if hs_ev is not None:
-        verdict = (f"[black bold on green] ✓ Valid 4-Way Handshake "
+        verdict = (f"[black bold on green] ✓ 有效四次握手 "
                    f"({hs_ev.pair_label}) [/black bold on green]")
         if instance > 1:
-            verdict += f" [dim](capture ×{instance})[/dim]"
+            verdict += f" [dim](捕获 ×{instance})[/dim]"
         lines += [treelog.branch(b) for b in bodies]       # every Mx a branch …
         if save_hint:                                      # … verdict branches too,
             lines.append(treelog.branch(verdict))          #     the save note closes
@@ -103,8 +103,8 @@ def _render_tree(client_mac: str, burst: _Burst, hs_ev, instance: int,
         else:
             lines.append(treelog.leaf(verdict))            # … else verdict closes it
     elif uncrackable:                                      # real handshake, AKM can't crack
-        leaf = (f"[black bold on yellow] ✗ {uncrackable} 4-Way Handshake "
-                f"[/black bold on yellow] [dim](not crackable)[/dim]")
+        leaf = (f"[black bold on yellow] ✗ {uncrackable} 四次握手 "
+                f"[/black bold on yellow] [dim](不可破解)[/dim]")
         lines += [treelog.branch(b) for b in bodies]
         lines.append(treelog.leaf(leaf))
     else:                                                  # partial: no verdict
@@ -117,8 +117,8 @@ def _render_tree(client_mac: str, burst: _Burst, hs_ev, instance: int,
 def _render_reannounce(client_mac: str, hs_ev, instance: int) -> list[str]:
     """A compact one-liner for a repeat capture on an already-announced client
     (its per-frame detail was suppressed, so there's no tree to redraw)."""
-    return [f"[black bold on green] ✓ Valid 4-Way Handshake ({hs_ev.pair_label}) "
-            f"[/black bold on green] [dim](capture ×{instance})[/dim] "
+    return [f"[black bold on green] ✓ 有效四次握手 ({hs_ev.pair_label}) "
+            f"[/black bold on green] [dim](捕获 ×{instance})[/dim] "
             f"[bold]{client_mac}[/bold]"]
 
 

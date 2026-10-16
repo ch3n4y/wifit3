@@ -274,7 +274,7 @@ def test_install_rule_success_stages_pair_and_elevates(monkeypatch, tmp_path):
     monkeypatch.setattr(lin, "run_privileged", _run)
     r = install_rule(_target(), node="/dev/bus/usb/003/053")
     assert r.ok and not r.cancelled
-    assert "replug" in r.message.lower()
+    assert "重新插拔" in r.message
     assert r.detail == blacklist_path("ar9271")
     assert seen["rule"].count('SUBSYSTEM=="usb"') == 1    # per-chipset, not the fleet
     assert "blacklist ath9k_htc" in seen["conf"]
@@ -306,7 +306,7 @@ def test_install_rule_fails_when_in_no_admin_group(monkeypatch, tmp_path):
     monkeypatch.setattr(lin, "run_privileged", lambda cmd, method: called.append(cmd) or 0)
     r = install_rule(_target())
     assert not r.ok and not r.cancelled and not called
-    assert "sudo or wheel" in r.message.lower()
+    assert "sudo 或 wheel" in r.message
 
 
 def test_install_rule_declined_is_cancelled(monkeypatch, tmp_path):
@@ -322,7 +322,7 @@ def test_install_rule_no_elevator_offers_manual_path(monkeypatch, tmp_path):
     monkeypatch.setattr(lin, "_choose_escalation_method", lambda: None)
     r = install_rule(_target())
     assert not r.ok and not r.cancelled
-    assert "manually" in r.detail
+    assert "手动" in r.detail
 
 
 def test_install_rule_non_linux_raises(monkeypatch):
@@ -346,7 +346,7 @@ def test_remove_rule_absent_is_benign_noop(monkeypatch, tmp_path):
     monkeypatch.setattr(lin.sys, "platform", "linux")
     _point_paths_at_tmp(monkeypatch, tmp_path)
     r = remove_rule(_target())
-    assert r.ok and "nothing to remove" in r.message.lower()
+    assert r.ok and "无需移除" in r.message
 
 
 def test_remove_rule_success_tells_user_to_replug(monkeypatch, tmp_path):
@@ -358,7 +358,7 @@ def test_remove_rule_success_tells_user_to_replug(monkeypatch, tmp_path):
     seen = {}
     monkeypatch.setattr(lin, "run_privileged", lambda cmd, method: seen.update(cmd=cmd) or 0)
     r = remove_rule(_target(), node="/dev/bus/usb/003/053")
-    assert r.ok and "replug" in r.message.lower()
+    assert r.ok and "重新插拔" in r.message
     assert "60-wifit3-ar9271.rules" in seen["cmd"] and "wifit3-ar9271.conf" in seen["cmd"]
     assert "chown root:root /dev/bus/usb/003/053" in seen["cmd"]
 
@@ -452,7 +452,7 @@ def test_remove_rule_narrow_leaves_sibling_blocked(monkeypatch, tmp_path):
     seen = _stub_elevation(monkeypatch)
     r = remove_rule(_target(key="rt5372"), node="/dev/bus/usb/003/053")
     assert r.ok
-    assert "rt2800usb" in r.message and "blocked" in r.message.lower()   # names the residual module
+    assert "rt2800usb" in r.message and "阻挡" in r.message   # names the residual module
     assert "60-wifit3-rt5372.rules" in seen["cmd"] and "wifit3-rt2800usb.conf" not in seen["cmd"]
 
 
@@ -464,7 +464,7 @@ def test_remove_rule_wide_clears_the_family(monkeypatch, tmp_path):
     seen = _stub_elevation(monkeypatch)
     r = remove_rule(_target(key="rt5372"), node="/dev/bus/usb/003/053",
                     also_keys=("rt2800usb",))
-    assert r.ok and "replug" in r.message.lower() and "blocked" not in r.message.lower()
+    assert r.ok and "重新插拔" in r.message and "阻挡" not in r.message
     assert "wifit3-rt5372.conf" in seen["cmd"] and "wifit3-rt2800usb.conf" in seen["cmd"]
 
 

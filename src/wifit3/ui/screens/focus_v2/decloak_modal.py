@@ -76,24 +76,24 @@ def seconds_per_ssid(methods: DecloakInput) -> float:
 
 def _eta_text(seconds: float) -> str:
     if seconds >= 172800:
-        return f"{seconds / 86400:.1f} d"
+        return f"{seconds / 86400:.1f} 天"
     if seconds >= 3600:
-        return f"{seconds / 3600:.1f} h"
+        return f"{seconds / 3600:.1f} 小时"
     if seconds >= 60:
-        return f"{seconds / 60:.0f} min"
-    return f"{seconds:.0f}s"
+        return f"{seconds / 60:.0f} 分钟"
+    return f"{seconds:.0f} 秒"
 
 
 class _TruncateButton(Button):
     def __init__(self, seconds: int) -> None:
-        super().__init__(f"{seconds // 60} min", compact=True)
+        super().__init__(f"{seconds // 60} 分钟", compact=True)
         self.seconds = seconds
 
 
 class DecloakInputModal(ModalScreen[Optional[DecloakInput]]):
     """Select candidate SSIDs to probe for (guess) and the probing method."""
 
-    BINDINGS = [Binding("escape", "cancel", "Cancel", show=True)]
+    BINDINGS = [Binding("escape", "cancel", "取消", show=True)]
 
     DEFAULT_CSS = """
     DecloakInputModal { align: center middle; }
@@ -134,41 +134,41 @@ class DecloakInputModal(ModalScreen[Optional[DecloakInput]]):
 
     def compose(self) -> ComposeResult:
         defaults = DecloakInput()
-        wordlist = PathInput("", title="Select wordlist", placeholder="wordlist file",
+        wordlist = PathInput("", title="选择字典文件", placeholder="字典文件",
                              id="wordlist")
-        wordlist.tooltip = "Load the list of SSIDs from a text file (1 SSID per line)"
+        wordlist.tooltip = "从文本文件加载 SSID 列表（每行一个 SSID）"
         with Vertical(id="dialog"):
-            yield Label(f"Decloak Hidden Network ({self._bssid})", id="title")
-            yield Label("Enter base SSID [i]or[/i] load list of SSIDs from file:", id="hint")
+            yield Label(f"解除隐藏网络（{self._bssid}）", id="title")
+            yield Label("输入基准 SSID [i]或[/i] 从文件加载 SSID 列表：", id="hint")
             with Horizontal(id="sources"):
-                yield Input(self._base_ssid, placeholder="base SSID", id="base-ssid",
-                            tooltip="Enter a common [i]prefix[/i] and auto-populate "
-                                    "potential suffixes")
+                yield Input(self._base_ssid, placeholder="基准 SSID", id="base-ssid",
+                            tooltip="输入公共 [i]前缀[/i]，自动填充"
+                                    "可能的后缀")
                 yield wordlist
             yield TextArea("\n".join(self._guesses(self._base_ssid)), id="candidates")
             with Vertical(id="methods"):
                 yield Checkbox(
-                    "Directed Probe Requests", defaults.use_directed_probe, id="use-directed",
-                    tooltip="Send probes directly to the AP (only decloaks the targeted AP). "
-                            "Retries/ACKs, fast.")
+                    "定向探测请求", defaults.use_directed_probe, id="use-directed",
+                    tooltip="直接向 AP 发送探测（仅解除目标 AP 的隐藏）。"
+                            "有重传/ACK，速度快。")
                 yield Checkbox(
-                    "Broadcast Probe Requests", defaults.use_broadcast_probe,
+                    "广播探测请求", defaults.use_broadcast_probe,
                     id="use-broadcast",
-                    tooltip="Send a broadcast probe (to all APs), potentially decloaking "
-                            "other APs. No retries/ACKs (lossy), fast.")
+                    tooltip="发送广播探测（面向所有 AP），可能同时"
+                            "解除其他 AP 的隐藏。无重传/ACK（有丢包），速度快。")
                 yield Checkbox(
-                    "Auth + Association Requests", defaults.use_authassoc_probe,
+                    "认证 + 关联请求", defaults.use_authassoc_probe,
                     id="use-authassoc",
-                    tooltip="Authenticate & associate with the target AP for each guess. "
-                            "Retries/ACKs, but slower than probes.")
+                    tooltip="对每个猜测值都与目标 AP 认证并关联。"
+                            "有重传/ACK，但比探测慢。")
             with Horizontal(id="truncate"):
-                yield Label("Truncate:")
+                yield Label("截断：")
                 for seconds in TRUNCATE_SECONDS:
                     yield _TruncateButton(seconds)
             yield Label("", id="status")
             with Horizontal(id="button-row"):
-                yield Button("Decloak", variant="primary", id="accept")
-                yield Button("Cancel", id="cancel")
+                yield Button("解除隐藏", variant="primary", id="accept")
+                yield Button("取消", id="cancel")
 
     def watch_wordlist_lines(self) -> None:
         self._update_estimate()
@@ -200,7 +200,7 @@ class DecloakInputModal(ModalScreen[Optional[DecloakInput]]):
         try:
             lines = line_count(path)
         except OSError as exc:
-            self._set_status(f"{path.name}: {exc.strerror or exc}", error=True)
+            self._set_status(f"{path.name}：{exc.strerror or exc}", error=True)
             return
         if lines * seconds_per_ssid(self._picked_methods()) > TRUNCATE_SECONDS[-1]:
             self.truncate_seconds = TRUNCATE_SECONDS[0]
@@ -248,28 +248,28 @@ class DecloakInputModal(ModalScreen[Optional[DecloakInput]]):
         self.query_one("#truncate").display = bool(would_shorten)
 
         if not per_ssid:
-            self._set_status("Pick at least one method", error=True)
+            self._set_status("请至少选择一种方式", error=True)
             return
         if truncate:
             ssid_count = min(ssid_count, int(truncate / per_ssid))
         if not ssid_count:
-            self._set_status("No candidate SSIDs to send", error=True)
+            self._set_status("没有可发送的候选 SSID", error=True)
             return
         requests = ssid_count * sum((methods.use_directed_probe, methods.use_broadcast_probe,
                                      methods.use_authassoc_probe))
-        status = (f"{ssid_count:,} SSIDs, {requests:,} requests, "
-                  f"ETA {_eta_text(ssid_count * per_ssid)}")
+        status = (f"{ssid_count:,} 个 SSID，{requests:,} 个请求，"
+                  f"预计 {_eta_text(ssid_count * per_ssid)}")
         if truncate:
-            status += f" (truncated to {truncate // 60} min)"
+            status += f"（已截断至 {truncate // 60} 分钟）"
         if not self.wordlist_lines and len(written) > len(sendable):
-            status += f" ({len(written) - len(sendable):,} dropped)"
+            status += f"（丢弃 {len(written) - len(sendable):,} 个）"
         self._set_status(status)
 
     def _accept(self) -> None:
         methods = self._picked_methods()
         per_ssid = seconds_per_ssid(methods)
         if not per_ssid:
-            self._set_status("Pick at least one method", error=True)
+            self._set_status("请至少选择一种方式", error=True)
             return
         limit = int(self.truncate_seconds / per_ssid) if self.truncate_seconds else None
         if self.wordlist_lines:
@@ -278,12 +278,12 @@ class DecloakInputModal(ModalScreen[Optional[DecloakInput]]):
                 methods.candidate_ssids = sendable_ssids(
                     wordlist_head(path, limit or self.wordlist_lines))
             except OSError as exc:
-                self._set_status(f"{path.name}: {exc.strerror or exc}", error=True)
+                self._set_status(f"{path.name}：{exc.strerror or exc}", error=True)
                 return
         else:
             methods.candidate_ssids = sendable_ssids(
                 self.query_one("#candidates", TextArea).text.splitlines())[:limit]
         if not methods.candidate_ssids:
-            self._set_status("No candidate SSIDs to send", error=True)
+            self._set_status("没有可发送的候选 SSID", error=True)
             return
         self.dismiss(methods)

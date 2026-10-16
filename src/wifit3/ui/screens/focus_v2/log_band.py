@@ -20,7 +20,7 @@ class LogBand(Vertical):
         yield SelectableRichLog(id="log-rich", markup=True, highlight=False, wrap=True)
 
     def on_mount(self) -> None:
-        self.border_title = "LOG"
+        self.border_title = "日志"
         log = self.query_one("#log-rich", RichLog)
         for line in self._initial:
             log.write(line)

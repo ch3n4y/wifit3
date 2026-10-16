@@ -417,7 +417,7 @@ async def test_stopped_search_does_not_claim_there_were_no_matches(monkeypatch):
         c.stopped = True
 
         assert await asyncio.wait_for(attempt, timeout=5) is False
-        assert not any("no PixieDust matches" in m for m in logged)
+        assert not any("未找到任何 PixieDust 匹配" in m for m in logged)
     finally:
         release.set()
 
@@ -642,7 +642,7 @@ def test_run_progress_line_second_half_uses_1k():
 def test_run_progress_line_exhausted():
     from wifit3.campaigns.pin import CampaignState, run_progress_line
     line = run_progress_line(CampaignState(bssid="x", phase="failed", tested=11000))
-    assert "exhausted" in line
+    assert "已穷尽" in line
 
 
 # ---- dead-first-half skip (no re-trying a ruled-out prefix) ------------------
@@ -767,7 +767,7 @@ async def test_permanent_wps_lock_bails_after_zero_progress_cycles(tmp_path):
     assert c.status == "failed"
     assert c.state.tested == 0
     assert c._consecutive_locks_no_progress == c._MAX_LOCKS_NO_PROGRESS
-    assert c.fail_reason == "WPS stayed locked for 5 cycles without PIN progress"
+    assert c.fail_reason == "WPS 已锁定 5 个周期且 PIN 无进展"
 
 
 def test_lock_counter_resets_after_pin_progress(tmp_path):
@@ -824,7 +824,7 @@ def test_wps_status_shows_fail_reason():
     camp = types.SimpleNamespace(
         state=types.SimpleNamespace(found_pin=None, tested=0, phase="common", first_half=None),
         status="failed",
-        fail_reason="WPS stayed locked for 5 cycles without PIN progress",
+        fail_reason="WPS 已锁定 5 个周期且 PIN 无进展",
         eta_seconds=None,
         lock_kind=None,
     )
@@ -832,4 +832,4 @@ def test_wps_status_shows_fail_reason():
     line = wps_status_markup(camp)
 
     assert "failed" in line
-    assert "stayed locked" in line
+    assert "已锁定" in line

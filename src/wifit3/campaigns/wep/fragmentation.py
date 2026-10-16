@@ -199,7 +199,7 @@ class WepFragmentation:
                 self._seed_key = key
                 self._rounds_on_seed = 0
                 # Group header (plain): each seed attempt is its own tree.
-                self._log("[cyan]Fragmentation:[/cyan] forging ARP packet…")
+                self._log("[cyan]分片：[/cyan] 正在伪造 ARP 数据包…")
                 return True
         return False
 
@@ -238,8 +238,8 @@ class WepFragmentation:
                     self._seed_key = None
                     # Close this seed's group: it wouldn't relay.
                     self._log(treelog.leaf_fail(
-                        "[yellow]seed wouldn't relay[/yellow] "
-                        "[dim](trying another)[/dim]"
+                        "[yellow]种子无法中继[/yellow] "
+                        "[dim](换一个重试)[/dim]"
                     ))
                 self._maybe_heartbeat()
         except asyncio.CancelledError:
@@ -265,7 +265,7 @@ class WepFragmentation:
     def _succeed(self) -> None:
         self._set_state("success")
         self._log(treelog.leaf_ok(
-            "[green]Fragmentation packet relayed[/green] [dim](AP echoed)[/dim]"
+            "[green]分片数据包已中继[/green] [dim](AP 已回显)[/dim]"
         ))
         frame = self._relay_frame
         # Immediate handoff: stop injecting, hand the relay to the campaign.
@@ -313,8 +313,8 @@ class WepFragmentation:
         self._last_state = state
         if state == "seeding":
             self._log(
-                "[cyan]Fragmentation:[/cyan] waiting for Data packet… "
-                "[dim](ETA: unknown)[/dim]"
+                "[cyan]分片：[/cyan] 等待数据包… "
+                "[dim](预计时间未知)[/dim]"
             )
         # waiting-auth is silent: the SECURITY panel shows fake-auth status,
         # and a separate "waiting for association" line is just noise.
@@ -326,6 +326,6 @@ class WepFragmentation:
         self._last_heartbeat = now
         if self.state == "injecting":
             self._log(treelog.branch(
-                f"[dim]round[/dim] {self._round} "
-                f"[dim]no relay yet…[/dim]"
+                f"[dim]轮次[/dim] {self._round} "
+                f"[dim]尚无中继…[/dim]"
             ))

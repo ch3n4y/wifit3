@@ -65,27 +65,27 @@ _INF_DEVICE_NAME = re.compile(r'^\s*DeviceName\s*=\s*"([^"]*)"', re.IGNORECASE |
 
 # libwdi wdi_error codes (libwdi.h) -> human message.
 _WDI_MESSAGES = {
-    0:   "WinUSB installed.",
-    -1:  "I/O error while installing the driver.",
-    -2:  "Internal error (invalid parameter).",
-    -3:  "Access denied while installing the driver.",
-    -4:  "The card was unplugged before the install finished.",
-    -5:  "The card wasn't found on the USB bus.",
-    -6:  "The card is busy. Another install may be in progress.",
-    -7:  "The driver install timed out.",
-    -8:  "Internal error (overflow).",
-    -9:  "Windows is still finishing a previous driver install. Wait a moment and retry.",
-    -10: "The install was interrupted.",
-    -11: "Out of resources while installing the driver.",
-    -12: "WinUSB isn't supported for this card.",
-    -13: "A WinUSB driver is already installed for this card.",
-    -14: "Install cancelled.",
-    -15: "Administrator rights are required (the elevation prompt was declined or blocked).",
-    -16: "32/64-bit mismatch (WOW64): wrong wdi-simple build for this Windows.",
-    -17: "Windows rejected the generated driver INF.",
-    -18: "The driver catalog (.cat) is missing.",
-    -19: "Windows refused the unsigned driver package.",
-    -99: "The driver install failed (unspecified libwdi error).",
+    0:   "WinUSB 已安装。",
+    -1:  "安装驱动时发生 I/O 错误。",
+    -2:  "内部错误（参数无效）。",
+    -3:  "安装驱动时访问被拒绝。",
+    -4:  "安装完成前网卡被拔出。",
+    -5:  "USB 总线上未找到该网卡。",
+    -6:  "网卡忙，可能正在执行另一次安装。",
+    -7:  "驱动安装超时。",
+    -8:  "内部错误（溢出）。",
+    -9:  "Windows 仍在完成上一次驱动安装，请稍候重试。",
+    -10: "安装被中断。",
+    -11: "安装驱动时资源不足。",
+    -12: "该网卡不支持 WinUSB。",
+    -13: "该网卡已安装 WinUSB 驱动。",
+    -14: "安装已取消。",
+    -15: "需要管理员权限（提权提示被拒绝或阻止）。",
+    -16: "32/64 位不匹配（WOW64）：wdi-simple 的版本与本机 Windows 不符。",
+    -17: "Windows 拒绝了生成的驱动 INF 文件。",
+    -18: "缺少驱动目录文件（.cat）。",
+    -19: "Windows 拒绝了未签名的驱动包。",
+    -99: "驱动安装失败（未指明的 libwdi 错误）。",
 }
 
 
@@ -157,10 +157,10 @@ def wdi_simple_path() -> Path:
     sub = _ARCH_DIRS.get(platform.machine().lower())
     if sub is None:
         raise FileNotFoundError(
-            f"No bundled wdi-simple.exe for arch {platform.machine()!r} (x64 and arm64 only)")
+            f"没有适用于 {platform.machine()!r} 架构的内置 wdi-simple.exe（仅 x64 与 arm64）")
     exe = _BIN / sub / "wdi-simple.exe"
     if not exe.is_file():
-        raise FileNotFoundError(f"Bundled wdi-simple.exe missing at {exe}")
+        raise FileNotFoundError(f"内置的 wdi-simple.exe 缺失：{exe}")
     return exe
 
 
@@ -193,7 +193,7 @@ def _build_args(vid: int, pid: int, iid: int | None = None, name: str | None = N
 
 
 def _wdi_message(code: int) -> str:
-    return _WDI_MESSAGES.get(code, f"The driver install failed (libwdi code {code}).")
+    return _WDI_MESSAGES.get(code, f"驱动安装失败（libwdi 代码 {code}）。")
 
 
 def _signed32(dword: int) -> int:
@@ -312,7 +312,7 @@ def _launch_winusb(vid: int, pid: int, iid: int | None = None,
         batpath.write_text(bat, encoding="mbcs")
     except OSError as e:
         return _PendingInstall(logpath=logpath,
-                               error=SetupResult(ok=False, message=f"Couldn't stage the installer: {e}"))
+                               error=SetupResult(ok=False, message=f"无法准备安装程序：{e}"))
     logger.info("WinUSB install (elevated): %s %s", exe.name, args_str)
     return _PendingInstall(logpath=logpath, run=_launch_elevated(str(batpath), ""))
 
@@ -331,13 +331,13 @@ def _finish_winusb(pending: _PendingInstall) -> SetupResult:
             logger.info("WinUSB install: user declined the UAC prompt")
             return SetupResult(
                 ok=False, cancelled=True,
-                message="Elevation cancelled. WinUSB was not installed.")
+                message="提权已取消，WinUSB 未安装。")
         logger.warning("WinUSB install: ShellExecuteExW failed (WinError %d)", run.win_error)
         return SetupResult(
-            ok=False, message=f"Could not launch the installer (WinError {run.win_error}).")
+            ok=False, message=f"无法启动安装程序（WinError {run.win_error}）。")
     if run.exit_code is None:
         return SetupResult(ok=False, detail=_last_line(output),
-                             message="The driver installer didn't finish within 3 minutes.")
+                             message="驱动安装程序未能在 3 分钟内完成。")
 
     wdi = run.exit_code
     logger.info("WinUSB install: wdi-simple exit=%d (%s)", wdi, _wdi_message(wdi))
@@ -528,7 +528,7 @@ def restore_driver(vid: int, pid: int, *, name: str | None = None,
     if not infs:
         return SetupResult(
             ok=False,
-            message="Couldn't find a WinUSB/libusb driver bound to this card to remove.")
+            message="未找到绑定在此网卡上可供移除的 WinUSB/libusb 驱动。")
 
     dest = _winusb_dir()
     try:
@@ -539,7 +539,7 @@ def restore_driver(vid: int, pid: int, *, name: str | None = None,
     try:
         batpath.write_text(_restore_script(infs, str(logpath)), encoding="mbcs")
     except OSError as e:
-        return SetupResult(ok=False, message=f"Couldn't stage the uninstaller: {e}")
+        return SetupResult(ok=False, message=f"无法准备卸载程序：{e}")
     logger.info("Restore driver (elevated): removing %s", ", ".join(infs))
 
     run = _run_elevated(str(batpath), "")
@@ -551,17 +551,17 @@ def restore_driver(vid: int, pid: int, *, name: str | None = None,
             logger.info("Restore: user declined the UAC prompt")
             return SetupResult(
                 ok=False, cancelled=True,
-                message="Elevation cancelled. The WinUSB driver was not removed.")
+                message="提权已取消，WinUSB 驱动未移除。")
         logger.warning("Restore: ShellExecuteExW failed (WinError %d)", run.win_error)
         return SetupResult(
-            ok=False, message=f"Could not launch the uninstaller (WinError {run.win_error}).")
+            ok=False, message=f"无法启动卸载程序（WinError {run.win_error}）。")
     if run.exit_code is None:
         return SetupResult(ok=False, detail=", ".join(infs),
-                             message="The driver uninstall didn't finish in time.")
+                             message="驱动卸载未能及时完成。")
     if run.exit_code not in _PNPUTIL_OK:
         logger.warning("Restore: pnputil failed for %s (exit=%d)", infs, run.exit_code)
         return SetupResult(ok=False, detail=", ".join(infs),
-                           message=f"pnputil couldn't remove the driver (exit {run.exit_code}).")
+                           message=f"pnputil 无法移除驱动（退出码 {run.exit_code}）。")
     return _verify_restore(vid, pid, infs, run.exit_code)
 
 
@@ -572,7 +572,7 @@ def _verify_restore(vid: int, pid: int, infs: list[str], code: int) -> SetupResu
         logger.warning("Restore: %s still holds %04x:%04x", still, vid, pid)
         return SetupResult(
             ok=False, detail=still,
-            message="Another WinUSB driver package is still bound to this card.")
+            message="仍有另一个 WinUSB 驱动包绑定在此网卡上。")
     # Only the nodes a restore can affect: the whole-device/parent node and the Wi-Fi function.
     # A sibling function (Bluetooth) carries its own driver and its own problems, none of ours.
     touched = [n for n in _enum_usb_nodes(vid, pid) if n.mi is None or n.is_wifi_function]
@@ -581,11 +581,11 @@ def _verify_restore(vid: int, pid: int, infs: list[str], code: int) -> SetupResu
         logger.warning("Restore: %s has problem %d on %s / %s",
                        sick.instance_id, sick.problem, sick.service, sick.inf)
         return SetupResult(
-            ok=False, detail=f"{sick.service or '(none)'} / {sick.inf or '(none)'}",
-            message="The card's driver did not come back correctly. Unplug and replug it.")
-    msg = "Removed the WinUSB driver. The card should return to normal Wi-Fi."
+            ok=False, detail=f"{sick.service or '无'} / {sick.inf or '无'}",
+            message="网卡驱动未能正常恢复，请重新插拔网卡。")
+    msg = "已移除 WinUSB 驱动。网卡应恢复正常 Wi-Fi。"
     if code == 3010 or any(n.problem == _CM_PROB_NEED_RESTART for n in touched):
-        msg += " (A reboot may be needed to finish.)"
+        msg += " （可能需要重启才能完成。）"
     logger.info("Restore: removed %s (pnputil exit=%d)", ", ".join(infs), code)
     return SetupResult(ok=True, message=msg, detail=", ".join(infs))
 
@@ -605,7 +605,7 @@ class SetupWindows(Setup):
             return None
 
         from wifit3.ui.wiffy import INSTALL_LINES
-        ui.status(f"Installing WinUSB driver for {device_id.description}… (up to a minute)")
+        ui.status(f"正在为 {device_id.description} 安装 WinUSB 驱动…（最多 1 分钟）")
         tail = asyncio.create_task(self._tail_log(ui))
         try:
             iid = await asyncio.to_thread(_composite_iid, device_id.vid, device_id.pid)
@@ -627,11 +627,11 @@ class SetupWindows(Setup):
             if not result.cancelled:
                 bits = []
                 if result.wdi_code is not None:
-                    bits.append(f"libwdi code {result.wdi_code}")
+                    bits.append(f"libwdi 代码 {result.wdi_code}")
                 if result.detail:
                     bits.append(result.detail)
                 detail = " · ".join(bits)
-                ui.error("WinUSB install failed",
+                ui.error("WinUSB 安装失败",
                          f"{result.message} ({detail})" if detail else result.message)
             return None
         # WinUSB may re-enumerate the device to a new USB address.
@@ -641,9 +641,9 @@ class SetupWindows(Setup):
         from wifit3.ui.screens.confirm_uninstall import ConfirmUninstallDialog
         name = device_id.chipset
         if await ui.ask(ConfirmUninstallDialog(name, "win")) is None:
-            return SetupResult(ok=False, cancelled=True, message="Uninstall cancelled.")
+            return SetupResult(ok=False, cancelled=True, message="卸载已取消。")
         from wifit3.ui.wiffy import UNINSTALL_LINES
-        ui.status(f"Removing wifit3 driver for {device_id.description}…")
+        ui.status(f"正在移除 {device_id.description} 的 wifit3 驱动…")
         # pnputil is quick and streams nothing, so give WiFFy a short intro so he still gets a line in.
         ui.begin_assistant(*UNINSTALL_LINES, intro_delay=0.5)
         result = await asyncio.to_thread(

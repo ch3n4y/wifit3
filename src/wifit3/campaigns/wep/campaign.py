@@ -47,7 +47,7 @@ def _key_markup(key: bytes) -> str:
     ascii_hint = (
         f' = "{key.decode("ascii")}"' if all(0x20 <= b < 0x7F for b in key) else ""
     )
-    return f"[bold black on cyan] ✓ CRACKED WEP KEY: {key.hex()}{ascii_hint} [/bold black on cyan]"
+    return f"[bold black on cyan] ✓ 已破解 WEP 密钥：{key.hex()}{ascii_hint} [/bold black on cyan]"
 
 
 class WepCampaign(Campaign):
@@ -55,9 +55,9 @@ class WepCampaign(Campaign):
 
     button_id = "btn-gen-ivs"
     key = "wep"
-    hotkey = ("r", "Replay")
-    idle_label = "ARP Replay"
-    run_label = "Stop Replay"
+    hotkey = ("r", "重放")
+    idle_label = "ARP 重放"
+    run_label = "停止重放"
     idle_variant = "success"
     run_variant = "error"
 
@@ -69,7 +69,7 @@ class WepCampaign(Campaign):
     def ineligible_reason(cls, ap) -> Optional[str]:
         """Fake-auth associates, so it needs a known SSID (hidden APs can't be joined)."""
         if ap.is_hidden:
-            return "hidden SSID: can't associate"
+            return "隐藏 SSID：无法关联"
         return None
 
     def __init__(
@@ -115,8 +115,8 @@ class WepCampaign(Campaign):
         supervise the PTW crack. The STA stays own-registered so our fixed-IV ARP isn't recounted."""
         self._active = True
         self._log(
-            f"[bold green]ARP Replay starting[/bold green] on "
-            f"[bold]{escape(self.target.ssid or '<hidden>')}[/bold]"
+            f"[bold green]ARP 重放已启动[/bold green] 目标 "
+            f"[bold]{escape(self.target.ssid or '‹隐藏›')}[/bold]"
         )
         # The lease arms active monitor (random STA for SPOOFABLE, the card's own for FIXED_MAC),
         # registers that STA as own and holds it for the whole run. fake-auth, replay and chopchop
@@ -155,8 +155,8 @@ class WepCampaign(Campaign):
             if not self._crack_started:
                 self._crack_started = True
                 self._log(
-                    "[bold cyan]Cracking Key[/bold cyan] with "
-                    ">10k IVs [dim](may require >40K)[/dim]"
+                    "[bold cyan]正在破解密钥[/bold cyan]，已用 "
+                    ">10k IV [dim]（可能需要 >40K）[/dim]"
                 )
             # Ship the (picklable) cracker to the worker.
             try:
@@ -183,7 +183,7 @@ class WepCampaign(Campaign):
         if self.chop is not None:
             self.chop.stop()
             self.chop = None
-            self._log("[dim]· ChopChop stopped (Generate IVs ended)[/dim]")
+            self._log("[dim]· ChopChop 已停止（生成 IV 已结束）[/dim]")
         # Stop replay (TX) before releasing the lease that disarms the card.
         self.replay.stop()
         self.fake_auth.stop()
@@ -196,7 +196,7 @@ class WepCampaign(Campaign):
         self._active = False
         # Quiet when we stopped because we WON
         if self.recovered_key is None:
-            self._log("[bold red]✗ Generate IVs stopped.[/bold red]")
+            self._log("[bold red]✗ 生成 IV 已停止。[/bold red]")
         logger.info("[WEP-Campaign] Stopped on %s", self.target.bssid)
 
     # ---- ChopChop sub-mode --------------------------------------------------
@@ -242,7 +242,7 @@ class WepCampaign(Campaign):
         return self._active
 
     def status_under_card(self) -> str:
-        return "● chopping" if self.chop_active else "● replaying"
+        return "● 切割中" if self.chop_active else "● 重放中"
 
     def status_under_dash(self, array, now: float) -> list[str]:
         from wifit3.ui.focus_model import wep_status_lines
@@ -254,25 +254,25 @@ class WepCampaign(Campaign):
         cracker_samples = getattr(self.cracker, "sample_count", 0)
 
         if self.chop_active:
-            action = "Chopping a packet"
+            action = "切割数据包"
         else:
             state = getattr(self.replay, "state", None)
             action = {
-                "replaying": "Replaying ARP",
-                "testing": "Testing a packet",
-                "waiting-arp": "Waiting for a packet",
-                "waiting-auth": "Associating",
-                "paused": "Paused",
-            }.get(state, "Listening for a packet")
+                "replaying": "重放 ARP",
+                "testing": "测试数据包",
+                "waiting-arp": "等待数据包",
+                "waiting-auth": "正在关联",
+                "paused": "已暂停",
+            }.get(state, "监听数据包")
 
         if cracker_samples >= CRACK_READY_THRESHOLD:
             return [f"[bold cyan]● {action}[/bold cyan] & "
-                    f"[bold cyan]Cracking[/bold cyan] WEP key",
-                    f"[dim]{cracker_samples:,} usable IVs[/dim]"]
+                    f"[bold cyan]破解中[/bold cyan] WEP 密钥",
+                    f"[dim]{cracker_samples:,} 个可用 IV[/dim]"]
         if self.chop_active:
-            return ["[bold cyan]● ChopChop[/bold cyan] forging an ARP seed",
-                    f"[dim]{n_ivs:,} IVs captured[/dim]"]
-        suffix = " [dim]for IVs[/dim]" if action == "Replaying ARP" else ""
+            return ["[bold cyan]● ChopChop[/bold cyan] 正在伪造 ARP 种子",
+                    f"[dim]已捕获 {n_ivs:,} 个 IV[/dim]"]
+        suffix = " [dim]获取 IV[/dim]" if action == "重放 ARP" else ""
         return [f"[bold green]● {action}[/bold green]{suffix}",
-                f"[dim]{n_ivs:,} IVs · cracks at "
-                f"{CRACK_READY_THRESHOLD // 1000}k usable[/dim]"]
+                f"[dim]{n_ivs:,} 个 IV · "
+                f"{CRACK_READY_THRESHOLD // 1000}k 个可用时开始破解[/dim]"]

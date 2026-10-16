@@ -70,7 +70,7 @@ class WpsEnrollee:
         if self.tx_ack:
             landed = await self.t.send_until_ack(frame, max_retries=self.ack_resends)
             if landed is False:
-                self.log(f"[WPS] → frame un-ACKed after {self.ack_resends + 1} sends (AP not hearing us)")
+                self.log(f"[WPS] → 发送 {self.ack_resends + 1} 次仍未获 ACK（AP 未收到）")
         else:
             await self.t.send_no_wait(frame)
 
@@ -110,7 +110,7 @@ class WpsEnrollee:
         timeout = self.eapol_start_timeout
         while time.monotonic() < deadline:
             if self.should_stop():
-                return AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="stopped by user")
+                return AttemptOutcome(PinResult.ABORTED, "<PBC>", detail="已被用户停止")
             frame = await self.t.recv(min(timeout, deadline - time.monotonic()))
             timeout = self.msg_timeout
             if frame is None:
@@ -119,7 +119,7 @@ class WpsEnrollee:
                     resends_left -= 1
                     await self.t.send_no_wait(self._last_1x_frame)
                     continue
-                return AttemptOutcome(PinResult.TIMEOUT, "<PBC>", detail="no EAP response")
+                return AttemptOutcome(PinResult.TIMEOUT, "<PBC>", detail="无 EAP 响应")
             resends_left = self.max_resends   # AP is talking → fresh silence budget
 
             p = M.parse_rx_frame(frame)
@@ -128,8 +128,8 @@ class WpsEnrollee:
                 kind = describe_frame(frame)
                 if kind in ("mgmt/DEAUTH", "mgmt/DISASSOC"):
                     why = disassoc_reason(frame)
-                    self.log(f"[WPS] ← {kind} reason={why} (AP dropped us), abandoning to retry")
-                    return AttemptOutcome(PinResult.TIMEOUT, "<PBC>", detail=f"deauth ({why})")
+                    self.log(f"[WPS] ← {kind} reason={why}（AP 把我们踢下线），放弃并重试")
+                    return AttemptOutcome(PinResult.TIMEOUT, "<PBC>", detail=f"解除认证（{why}）")
                 continue
 
             if p.is_identity_request:
@@ -146,7 +146,7 @@ class WpsEnrollee:
                 ce = int.from_bytes(ce_raw[:2], "big") if ce_raw and len(ce_raw) >= 2 else None
                 phase("← EAP-FAIL/NACK")
                 return AttemptOutcome(PinResult.PROTO_ERROR, "<PBC>",
-                                      detail=f"NACK: {config_error_name(ce)}", config_error=ce)
+                                      detail=f"NACK：{config_error_name(ce)}", config_error=ce)
 
             # WSC_Start (an opcode, not a msg-type) kicks off M1.
             if p.wsc_opcode == M.WSC_START and p.wsc_msg_type == 0:
@@ -156,7 +156,7 @@ class WpsEnrollee:
                     phase("→ M1")
                     await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_MSG, m1))
                     sent_m1 = True
-                    once("m1", "M1: sending enrollee identity + public key")
+                    once("m1", "M1：发送登记端身份 + 公钥")
                 continue
 
             mt = p.wsc_msg_type
@@ -170,7 +170,7 @@ class WpsEnrollee:
                 pkr = p.attrs.get(M.ATTR_PUBLIC_KEY)
                 nonce_r = p.attrs.get(M.ATTR_REGISTRAR_NONCE)
                 if not pkr or not nonce_r:
-                    return AttemptOutcome(PinResult.PROTO_ERROR, "<PBC>", detail="M2 missing PKr/nonce")
+                    return AttemptOutcome(PinResult.PROTO_ERROR, "<PBC>", detail="M2 缺少 PKr/nonce")
                 shared = wc.dh_shared_secret(pkr, priv)
                 authkey, keywrapkey, _ = wc.derive_keys(shared, nonce_e, mac_e, nonce_r)
                 psk1, psk2 = wc.derive_psk(authkey, M.PBC_PASSWORD)
@@ -178,23 +178,23 @@ class WpsEnrollee:
                                          authkey, p.raw_wsc_attrs)
                 phase("→ M3")
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_MSG, m3))
-                once("m3", "M2 → M3: E-hash committed")
+                once("m3", "M2 → M3：已提交 E-hash")
 
             elif mt == M.WPS_M4:
                 phase("← M4")
                 if authkey is None:
-                    return AttemptOutcome(PinResult.PROTO_ERROR, "<PBC>", detail="M4 before keys")
+                    return AttemptOutcome(PinResult.PROTO_ERROR, "<PBC>", detail="在密钥派生之前收到 M4")
                 m5 = M.build_m5_enrollee(nonce_r, e_s1, authkey, keywrapkey, p.raw_wsc_attrs)
                 phase("→ M5")
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_MSG, m5))
-                once("m5", "M4 → M5: revealing E-S1")
+                once("m5", "M4 → M5：公开 E-S1")
 
             elif mt == M.WPS_M6:
                 phase("← M6")
                 m7 = M.build_m7_enrollee(nonce_r, e_s2, authkey, keywrapkey, p.raw_wsc_attrs)
                 phase("→ M7")
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_MSG, m7))
-                once("m7", "M6 → M7: revealing E-S2")
+                once("m7", "M6 → M7：公开 E-S2")
 
             elif mt == M.WPS_M8:
                 phase("← M8")
@@ -203,14 +203,14 @@ class WpsEnrollee:
                 await self._send_1x(M.eap_wsc_response(p.eap_id, M.WSC_DONE,
                                                        M.build_wsc_done(nonce_e, nonce_r)))
                 if not creds or "network_key" not in creds:
-                    return AttemptOutcome(PinResult.PROTO_ERROR, "<PBC>", detail="M8 had no Network Key")
+                    return AttemptOutcome(PinResult.PROTO_ERROR, "<PBC>", detail="M8 中没有 Network Key")
                 ssid = creds.get("ssid")
                 psk = creds["network_key"]
-                once("m8", "M8 → SUCCESS: credential decrypted")
+                once("m8", "M8 → 成功：凭据已解密")
                 return AttemptOutcome(
                     PinResult.SUCCESS, "<PBC>",
                     psk=psk.decode("utf-8", "replace"),
                     ssid=ssid.decode("utf-8", "replace") if ssid else None,
                 )
 
-        return AttemptOutcome(PinResult.TIMEOUT, "<PBC>", detail="exchange did not converge")
+        return AttemptOutcome(PinResult.TIMEOUT, "<PBC>", detail="交换未收敛")

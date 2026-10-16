@@ -102,9 +102,9 @@ class WifiteFatalError(WifiteError):
 class WifiteDeviceLostError(WifiteError):
     """The active adapter vanished mid-run (unplug / USB pipe wedged past recovery)."""
 
-    def __init__(self, name: str = "the wireless adapter") -> None:
+    def __init__(self, name: str = "无线网卡") -> None:
         super().__init__(
-            "Adapter disconnected",
-            f"Lost contact with {name}: it was unplugged or the USB link dropped.\n"
-            "Replug the card, then press Back to Splash to reconnect.",
+            "网卡已断开",
+            f"与 {name} 失去联系：网卡被拔出，或 USB 链路已中断。\n"
+            "重新插拔网卡，然后点按「返回启动页」重新连接。",
         )

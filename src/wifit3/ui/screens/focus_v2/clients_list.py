@@ -47,7 +47,7 @@ class ClientWidget(Horizontal):
             self._fp_label.tooltip = self._fp.label
             self._fp_label.add_class("fp-known")
             self._mac_label.add_class("fp-known")
-        self._deauth = Button("✕", classes="cl-deauth", tooltip="Deauthenticate Client")
+        self._deauth = Button("✕", classes="cl-deauth", tooltip="解除认证客户端")
         yield self._fp_label
         yield self._mac_label
         yield self._pwr_label
@@ -96,7 +96,7 @@ class ClientWidget(Horizontal):
 class FingerprintModal(ModalScreen[None]):
     """A small popup showing a Client's vendor information."""
 
-    BINDINGS = [Binding("escape", "dismiss", "Close", show=False)]
+    BINDINGS = [Binding("escape", "dismiss", "关闭", show=False)]
 
     DEFAULT_CSS = """
     FingerprintModal { background: $background 0%; }
@@ -114,7 +114,7 @@ class FingerprintModal(ModalScreen[None]):
     def compose(self) -> ComposeResult:
         box = Vertical(
             Label(f"{self._fp.emoji} {self._fp.label}"),
-            Label(f"[dim]OUI: {self._mac[:8]}[/dim]"),
+            Label(f"[dim]OUI：{self._mac[:8]}[/dim]"),
             id="fp-box",
         )
         box.styles.offset = self._offset
@@ -145,8 +145,8 @@ class ClientsList(Vertical):
 
     def compose(self) -> ComposeResult:
         # Broadcast button pinned at the top; only the row list scrolls below it.
-        yield Button("Deauth all", id="deauth-all", classes="bcast-btn",
-                     tooltip="Deauthenticate all clients (Broadcast)")
+        yield Button("全部解除认证", id="deauth-all", classes="bcast-btn",
+                     tooltip="解除认证所有客户端（广播）")
         rows = []
         for c in self._clients:
             widget = ClientWidget(c)
@@ -191,4 +191,4 @@ class ClientsList(Vertical):
             btn.disabled = disabled
 
     def _update_title(self) -> None:
-        self.border_title = f"CLIENTS ({len(self._rows)})"
+        self.border_title = f"客户端（{len(self._rows)}）"

@@ -57,8 +57,8 @@ class EvilTwinInput:
 class EvilTwinCampaign(Campaign):
     button_id = "btn-eviltwin"
     key = "eviltwin"
-    idle_label = "EvilTwin"
-    run_label = "Stop EvilTwin"
+    idle_label = "邪恶双胞胎"
+    run_label = "停止邪恶双胞胎"
     idle_variant = "primary"
     run_variant = "error"
 
@@ -69,30 +69,30 @@ class EvilTwinCampaign(Campaign):
     @classmethod
     def ineligible_reason(cls, ap) -> Optional[str]:
         if not ap.last_beacon_frame:
-            return "no beacon captured yet"
+            return "尚未捕获到信标"
         return None
 
     def status_under_card(self) -> str:
-        return "● EvilTwin"
+        return "● 邪恶双胞胎"
 
     def status_headlines(self, vault) -> list[str]:
         from wifit3.persist.config import Config
         if self.captured:
-            return ["[black bold on green] ✓ Captured [/black bold on green] crackable M2",
-                    f"[dim]saved to {Path(Config.captures_dir)}{os.sep}[/dim]"]
+            return ["[black bold on green] ✓ 已捕获 [/black bold on green] 可破解的 M2",
+                    f"[dim]已保存到 {Path(Config.captures_dir)}{os.sep}[/dim]"]
         stats = getattr(self.fakeap, "stats", None)
         if stats is None:
-            return [f"[bold cyan]EvilTwin arming…[/bold cyan] on CH {self.twin_channel}"]
-        return [f"[bold cyan]EvilTwin active[/bold cyan] on CH {self.twin_channel}",
-                f"[dim]auth:{stats.auth} · assoc:{stats.assoc} · M2:{stats.m2}[/dim]",
-                f"[dim]probes: {stats.probes_direct} direct · "
-                f"{stats.probes_wildcard} wildcard[/dim]"]
+            return [f"[bold cyan]邪恶双胞胎启动中…[/bold cyan] CH {self.twin_channel}"]
+        return [f"[bold cyan]邪恶双胞胎运行中[/bold cyan] CH {self.twin_channel}",
+                f"[dim]认证:{stats.auth} · 关联:{stats.assoc} · M2:{stats.m2}[/dim]",
+                f"[dim]探测: {stats.probes_direct} 个定向 · "
+                f"{stats.probes_wildcard} 个通配[/dim]"]
 
     def __init__(self, array, target, evil_input: EvilTwinInput):
         if not target.last_beacon_frame:
-            raise ValueError("EvilTwin needs a captured beacon to clone; none seen yet.")
+            raise ValueError("邪恶双胞胎需要已捕获的信标才能克隆；目前尚未捕获到信标。")
         if not target.ssid:
-            raise ValueError("EvilTwin needs a known SSID: target is hidden.")
+            raise ValueError("邪恶双胞胎需要已知的 SSID：目标为隐藏网络。")
         super().__init__(ap=target, array=array)
         self.ssid = target.ssid
         self.target_channel = target.channel

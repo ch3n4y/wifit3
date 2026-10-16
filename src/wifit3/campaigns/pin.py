@@ -84,14 +84,14 @@ def run_progress_line(state: CampaignState) -> Optional[str]:
     if state.found_pin is not None:
         return None  # the _wps_pin.txt row already reports the win
     if state.phase == "failed":
-        return (f"[bold]WPS PIN[/bold] sweep [red]exhausted[/red] "
-                f"[dim]({state.tested:,} tried · not found)[/dim]")
+        return (f"[bold]WPS PIN[/bold] 遍历[red]已穷尽[/red] "
+                f"[dim]（已尝试 {state.tested:,} 次 · 未找到）[/dim]")
     if state.phase == "second_half" and state.first_half:
         # First half locked: the live keyspace is the 1,000-candidate second half.
-        return (f"[bold]WPS PIN[/bold] sweep: [cyan]{state.p2_index}[/cyan]/1k "
-                f"[dim](first half [green]{state.first_half}[/green] locked)[/dim]")
-    return (f"[bold]WPS PIN[/bold] sweep: [cyan]{state.tested:,}[/cyan]/11k "
-            f"[dim](auto-resumes)[/dim]")
+        return (f"[bold]WPS PIN[/bold] 遍历：[cyan]{state.p2_index}[/cyan]/1k "
+                f"[dim]（前半段 [green]{state.first_half}[/green] 已锁定）[/dim]")
+    return (f"[bold]WPS PIN[/bold] 遍历：[cyan]{state.tested:,}[/cyan]/11k "
+            f"[dim]（自动续跑）[/dim]")
 
 
 def _fmt_eta(secs: Optional[float]) -> str:
@@ -116,7 +116,7 @@ def wps_status_markup(camp) -> str:
     from rich.markup import escape
     st = camp.state
     if st.found_pin is not None:
-        return (f"[black bold on cyan] PIN CRACKED: ✓ "
+        return (f"[black bold on cyan] PIN 已破解：✓ "
                 f"{escape(st.found_pin or EMPTY_PIN_LABEL)} [/black bold on cyan]")
     tested = _compact_count(st.tested)
     if camp.status == "locked":
@@ -124,20 +124,20 @@ def wps_status_markup(camp) -> str:
         remaining = int(camp.lock_remaining_seconds)
         m, s = divmod(remaining, 60)
         countdown = f"{m}:{s:02d}"
-        kind = camp.lock_kind or "soft"
-        color = "red" if kind == "hard" else "dark_orange"
-        return (f"WPS PIN: [cyan]{tested}[/cyan]/11k · "
+        kind = "硬锁定" if camp.lock_kind == "hard" else "软锁定"
+        color = "red" if camp.lock_kind == "hard" else "dark_orange"
+        return (f"WPS PIN：[cyan]{tested}[/cyan]/11k · "
                 f"[{color}]{kind} {countdown}[/{color}]")
     if camp.status in ("failed", "error"):
         reason = getattr(camp, "fail_reason", None)
         suffix = f" · [dim]{escape(reason)}[/dim]" if reason else f" [dim]({tested}/11k)[/dim]"
-        return f"WPS PIN: [red]{camp.status}[/red]{suffix}"
+        return f"WPS PIN：[red]{camp.status}[/red]{suffix}"
     eta = _fmt_eta(camp.eta_seconds)
     if st.phase == "second_half" and st.first_half:
         # First half locked in: the meaningful keyspace is the second half
-        return (f"WPS PIN: [cyan]{st.p2_index}[/cyan]/1k · "
+        return (f"WPS PIN：[cyan]{st.p2_index}[/cyan]/1k · "
                 f"[green]p1={escape(st.first_half)}[/green] [dim]{eta}[/dim]")
-    return f"WPS PIN: [cyan]{tested}[/cyan]/11k · [dim]ETA {eta}[/dim]"
+    return f"WPS PIN：[cyan]{tested}[/cyan]/11k · [dim]预计 {eta}[/dim]"
 
 
 class WpsCampaign(Campaign):
@@ -151,7 +151,7 @@ class WpsCampaign(Campaign):
     key = "wps"
     hotkey = ("i", "WPS PIN")
     idle_label = "WPS PIN"
-    run_label = "Stop PIN"
+    run_label = "停止 PIN"
     idle_variant = "primary"
     run_variant = "error"
 
@@ -163,8 +163,8 @@ class WpsCampaign(Campaign):
     @classmethod
     def ineligible_reason(cls, ap):
         if ap.is_hidden:
-            return "hidden SSID: can't associate"
-        return "WPS locked" if getattr(ap, "wps_locked", False) else None
+            return "隐藏 SSID：无法关联"
+        return "WPS 已锁定" if getattr(ap, "wps_locked", False) else None
 
     def check_auto_stop(self) -> bool:
         return self.state.phase == "done" or self.status in ("failed", "error")
@@ -175,9 +175,9 @@ class WpsCampaign(Campaign):
     def status_headlines(self, vault) -> list[str]:
         from rich.markup import escape
         if self.state.found_pin is not None:
-            return ["[black bold on green] ✓ WPS PIN cracked [/black bold on green]",
+            return ["[black bold on green] ✓ WPS PIN 已破解 [/black bold on green]",
                     f"[dim]PIN {escape(self.state.found_pin or EMPTY_PIN_LABEL)}[/dim]"]
-        return ["[bold cyan]● WPS PIN brute-force[/bold cyan]",
+        return ["[bold cyan]● WPS PIN 暴力破解[/bold cyan]",
                 f"[dim]{wps_status_markup(self)}[/dim]"]
 
     def __init__(self, array, target, log=None, attempt_delay: float = 0.0):
@@ -247,17 +247,17 @@ class WpsCampaign(Campaign):
                     # Previous run recovered the PIN. The user clicking WPS PIN
                     # again means "verify against the live AP", handled by
                     # _run switching to the "verify" phase.
-                    self.log(f"resumed campaign: previously recovered PIN "
+                    self.log(f"已恢复战役：先前已恢复的 PIN "
                              f"[black bold on cyan] {st.found_pin or EMPTY_PIN_LABEL} "
                              f"[/black bold on cyan]")
                 elif st.first_half:
                     # In-progress with first-half locked in. Surface it.
-                    self.log(f"resumed campaign: [cyan]{st.tested:,}[/cyan]"
-                             f"/11,000 pins, [cyan bold]{st.first_half}[/cyan bold]"
+                    self.log(f"已恢复战役：[cyan]{st.tested:,}[/cyan]"
+                             f"/11,000 个 PIN，[cyan bold]{st.first_half}[/cyan bold]"
                              f"[bold]????[/bold]")
                 else:
-                    self.log(f"resumed campaign: [cyan]{st.tested:,}[/cyan]"
-                             f"/11,000 pins")
+                    self.log(f"已恢复战役：[cyan]{st.tested:,}[/cyan]"
+                             f"/11,000 个 PIN")
                 return st
             except Exception as e:
                 logger.warning("WPS state load failed (%s); starting fresh", e)
@@ -334,7 +334,7 @@ class WpsCampaign(Campaign):
     async def _try(self, pin: str) -> AttemptOutcome:
         """One PIN attempt on a FRESH association."""
         if not await self._ensure_session():
-            return AttemptOutcome(PinResult.PROTO_ERROR, pin, detail="assoc failed")
+            return AttemptOutcome(PinResult.PROTO_ERROR, pin, detail="关联失败")
         self.transport.drain()
         reg = WpsRegistrar(self.transport, str_to_mac(self.bssid), self.our_mac,
                            channel=self.channel, wsc_2_0=self.wsc_2_0,
@@ -435,23 +435,23 @@ class WpsCampaign(Campaign):
             new_psk = out.psk or ""
             old_psk = st.found_psk or ""
             if new_psk == old_psk:
-                self.log(f"[bold green]verified[/bold green] PIN [cyan]{pin}[/cyan] "
-                         f"[dim](PSK unchanged)[/dim]")
+                self.log(f"[bold green]已验证[/bold green] PIN [cyan]{pin}[/cyan] "
+                         f"[dim]（PSK 未变更）[/dim]")
             elif old_psk != "":
-                self.log(f"[bold green]verified[/bold green] PIN [cyan]{pin}[/cyan]: "
-                         f"[bold yellow]PSK CHANGED[/bold yellow] "
-                         f"[dim](updated below)[/dim]")
+                self.log(f"[bold green]已验证[/bold green] PIN [cyan]{pin}[/cyan]："
+                         f"[bold yellow]PSK 已变更[/bold yellow] "
+                         f"[dim]（已在下方更新）[/dim]")
             else:
-                self.log(f"[bold green]verified[/bold green] PIN [cyan]{pin}[/cyan]")
+                self.log(f"[bold green]已验证[/bold green] PIN [cyan]{pin}[/cyan]")
             st.found_psk = new_psk
             st.phase = "done"
             return
         if out.first_half_ok:
             # PIN changed: SECOND_HALF_WRONG, first half still valid
             kept = pinmod.split_pin(pin)[0]
-            self.log(f"[yellow]PIN's second half changed[/yellow], "
-                     f"first half [green]{kept}[/green] still valid; "
-                     f"sweeping second half again")
+            self.log(f"[yellow]PIN 的后半段已变更[/yellow]，"
+                     f"前半段 [green]{kept}[/green] 仍然有效；"
+                     f"重新遍历后半段")
             st.first_half = kept
             st.found_pin = None
             st.found_psk = None
@@ -461,8 +461,8 @@ class WpsCampaign(Campaign):
             return
         if out.result is PinResult.FIRST_HALF_WRONG:
             # PIN changed: Nothing from old PIN is recoverable.
-            self.log("[red]PIN no longer valid[/red] "
-                     "[dim](first half wrong, restarting full sweep)[/dim]")
+            self.log("[red]PIN 已失效[/red] "
+                     "[dim]（前半段错误，重新开始完整遍历）[/dim]")
             st.first_half = None
             st.found_pin = None
             st.found_psk = None
@@ -482,13 +482,13 @@ class WpsCampaign(Campaign):
         name = self.target.ssid or self.bssid
         logger.info("WPS campaign start on %s (mac %s)", name, self.our_mac.hex())
         if self._oui_pin_count:
-            self.log(f"[dim]Prioritizing [bold]{self._oui_pin_count} OUI-matching "
-                     f"default PIN(s)[/bold][/dim]")
+            self.log(f"[dim]优先尝试 [bold]{self._oui_pin_count} 个与 OUI 匹配的"
+                     f"默认 PIN[/bold][/dim]")
 
         # When resuming with a previously-recovered PIN, re-verify it against the AP
         if self.state.phase == "done" and self.state.found_pin is not None:
-            self.log("re-verifying PIN against the AP "
-                     "[dim](if the PSK changed, we'll catch it)[/dim]")
+            self.log("对 AP 重新校验 PIN "
+                     "[dim]（若 PSK 已变更，我们会发现）[/dim]")
             self.state.phase = "verify"
 
         try:
@@ -510,8 +510,8 @@ class WpsCampaign(Campaign):
                     if self._consecutive_locks_no_progress >= self._MAX_LOCKS_NO_PROGRESS:
                         self.status = "failed"
                         self.fail_reason = (
-                            f"WPS stayed locked for {self._consecutive_locks_no_progress} "
-                            "cycles without PIN progress"
+                            f"WPS 已锁定 {self._consecutive_locks_no_progress} "
+                            "个周期且 PIN 无进展"
                         )
                         self._save_state()
                         break
@@ -545,7 +545,7 @@ class WpsCampaign(Campaign):
                              f"[dim bold]\\[#{self._consecutive_refusals}][/dim bold]")
                     if self._consecutive_refusals >= self._REFUSAL_BAIL:
                         self.status = "failed"     # Focus renders the fail-leaf from fail_reason
-                        self.fail_reason = f"AP refused before M1 {self._REFUSAL_BAIL}×"
+                        self.fail_reason = f"AP 在 M1 之前拒绝 {self._REFUSAL_BAIL} 次"
                         self._save_state()
                         break
                     continue                       # bounded retry; never advance the keyspace
@@ -584,7 +584,7 @@ class WpsCampaign(Campaign):
         except Exception as e:
             logger.exception("WPS campaign crashed")
             self.status = "error"
-            self.log(f"[red]campaign error:[/red] {e}")
+            self.log(f"[red]战役错误：[/red] {e}")
         # save + _teardown + lease release now run in teardown() (every exit).
 
     def _beacon_locked(self) -> bool:
@@ -595,7 +595,7 @@ class WpsCampaign(Campaign):
         """Mark the lock state, optionally wait it out, then release."""
         # Don't treat a silent AP (0 ACKs) as locked.
         if not beacon_locked and self._tx_ack and not self._ap_ever_acked:
-            self.log("[orange1]No ACK from AP[/orange1] [dim](retrying, no backoff)[/dim]")
+            self.log("[orange1]AP 未回 ACK[/orange1] [dim]（重试中，不退避）[/dim]")
             self.lock.note_progress()
             self._last_attempt_sig = None
             return
@@ -603,15 +603,15 @@ class WpsCampaign(Campaign):
         # "hard" = AP itself advertises WPS locked in its beacons
         # "soft" = our backoff after N rejects before any PIN half is judged.
         self._lock_kind = "hard" if beacon_locked else "soft"
-        trigger = "beacon" if beacon_locked else f"{self.lock.strikes} strikes"
+        trigger = "信标" if beacon_locked else f"{self.lock.strikes} 次拒绝"
         if wait:
             # Slow path: AP is locked
             backoff = self.lock.backoff()
             self._lock_end_at = time.monotonic() + backoff
             self.status = "locked"
-            lock_label = "hard locked" if beacon_locked else "soft-lock"
+            lock_label = "硬锁定" if beacon_locked else "软锁定"
             self.log(f"{self._cont_align()} → [bright_red]{lock_label}[/bright_red] "
-                     f"({trigger}) [dim]waiting {backoff:.0f}s[/dim]")
+                     f"（{trigger}）[dim]等待 {backoff:.0f}s[/dim]")
             self._save_state()
             end = time.monotonic() + backoff
             while time.monotonic() < end and not self.stopped:
@@ -620,8 +620,8 @@ class WpsCampaign(Campaign):
                     break
         else:
             # Fast path: Assume AP is not locked to a new MAC
-            self.log(f"{self._cont_align()} → [bright_red]soft-lock[/bright_red] "
-                     f"[dim]rotating MAC[/dim]")
+            self.log(f"{self._cont_align()} → [bright_red]软锁定[/bright_red] "
+                     f"[dim]轮换 MAC[/dim]")
         self.lock.end_lock()
         self._lock_kind = None
         self._lock_end_at = None
@@ -688,24 +688,24 @@ class WpsCampaign(Campaign):
         if self._pixie_tried or self.state.phase == "verify" or out.pixie is None:
             return False
         self._pixie_tried = True
-        self.log(f"{self._attempt_prefix(pin)} → trying [cyan]PixieDust[/] offline…")
+        self.log(f"{self._attempt_prefix(pin)} → 尝试 [cyan]PixieDust[/] 离线破解…")
         result = await self._run_pixie(out.pixie)
-        mode = result.mode.name if result.mode is not None else "UNKNOWN"
+        mode = result.mode.name if result.mode is not None else "未知"
         if result.pin is not None:
             self.state.found_pin = result.pin
             self.state.phase = "verify"
-            self.log(f"{self._cont_align()} → [bold bright_green]PixieDust found:[/] "
-                     f"[cyan bold]{result.pin or EMPTY_PIN_LABEL}[/] [dim]({mode}; verifying)[/]")
+            self.log(f"{self._cont_align()} → [bold bright_green]PixieDust 已找到：[/] "
+                     f"[cyan bold]{result.pin or EMPTY_PIN_LABEL}[/] [dim]（{mode}；验证中）[/]")
             return True
         if result.first_half is not None and not out.first_half_ok:
             st = self.state
             st.first_half, st.phase, st.p2_index = result.first_half, "second_half", 0
             st.skip_middle = None   # nothing tried online yet, so sweep all 1000 tails
-            self.log(f"{self._cont_align()} → [bold bright_green]PixieDust half:[/] P1 "
-                     f"[cyan bold]{result.first_half}[/] [dim]({mode}; second half online)[/]")
+            self.log(f"{self._cont_align()} → [bold bright_green]PixieDust 前半段：[/] P1 "
+                     f"[cyan bold]{result.first_half}[/] [dim]（{mode}；后半段在线枚举）[/]")
             return True
         if not self.stopped:   # an abandoned search didn't search, so it found nothing to say
-            self.log(f"{self._cont_align()} → [dim italic]no PixieDust matches found[/]")
+            self.log(f"{self._cont_align()} → [dim italic]未找到任何 PixieDust 匹配[/]")
         return False
 
     def _should_retry_lost_reply(self, pin: str, out: AttemptOutcome) -> bool:
@@ -720,13 +720,13 @@ class WpsCampaign(Campaign):
             return False
         self._timeout_retries += 1
         if self._timeout_retries > self._MAX_TIMEOUT_RETRIES:
-            self.log(f"{self._attempt_prefix(pin)} → [dim]no reply after "
-                     f"{self._timeout_retries} tries, conceding as wrong[/dim]")
+            self.log(f"{self._attempt_prefix(pin)} → [dim]连续 "
+                     f"{self._timeout_retries} 次无响应，判定为错误[/dim]")
             self._timeout_retries = 0
             return False                  # give up retrying; fall through to advance
         lost = "M5" if out.result is PinResult.FIRST_HALF_WRONG else "M7"
-        self.log(f"{self._attempt_prefix(pin)} → [dim]no reply (likely a lost {lost}), "
-                 f"retrying (#{self._timeout_retries})[/dim]")
+        self.log(f"{self._attempt_prefix(pin)} → [dim]无响应（疑似丢失 {lost}），"
+                 f"重试（#{self._timeout_retries}）[/dim]")
         self.lock.note_progress()         # a lost reply isn't a lock; keep the strike clean
         return True
 
@@ -776,32 +776,32 @@ class WpsCampaign(Campaign):
 
         label = self._attempt_prefix(pin)
         if first_half_just_confirmed:
-            self.log(f"{label} → [bold bright_green]first half OK[/bold bright_green] "
+            self.log(f"{label} → [bold bright_green]前半段正确[/bold bright_green] "
                      f"[dim bold]\\[M5][/dim bold]")
             return
         if first_half_retired:
-            self.log(f"{label} → [red]first half wrong[/red] [dim bold]\\[M4][/dim bold] "
-                     f"[yellow](half {prev_first_half} was wrong, resuming the sweep)[/yellow]")
+            self.log(f"{label} → [red]前半段错误[/red] [dim bold]\\[M4][/dim bold] "
+                     f"[yellow]（前半段 {prev_first_half} 有误，恢复遍历）[/yellow]")
             return
         if out.result is PinResult.FIRST_HALF_WRONG:
-            self.log(f"{label} → [red]first half wrong[/red] [dim bold]\\[M4][/dim bold]")
+            self.log(f"{label} → [red]前半段错误[/red] [dim bold]\\[M4][/dim bold]")
         elif out.result is PinResult.SECOND_HALF_WRONG:
-            self.log(f"{label} → [bold bright_red]second half wrong[/bold bright_red] "
+            self.log(f"{label} → [bold bright_red]后半段错误[/bold bright_red] "
                      f"[dim bold]\\[M6][/dim bold]")
         elif out.result is PinResult.PROTO_ERROR:
-            if out.detail == "assoc failed":   # not a NACK, we never associated (AP often locked)
+            if out.detail == "关联失败":   # not a NACK, we never associated (AP often locked)
                 if self._tx_ack and not self._ap_ever_acked:
                     # Zero ACKs: the AP isn't hearing us at all (out of range).
-                    self.log(f"{label} → [orange1]no assoc[/orange1] "
-                             f"[dim bold](0 TX ACKs)[/dim bold]")
+                    self.log(f"{label} → [orange1]未关联[/orange1] "
+                             f"[dim bold]（0 个 TX ACK）[/dim bold]")
                 else:
                     # AP heard us (ACKed) but wouldn't complete association.
-                    self.log(f"{label} → [orange1]no assoc response[/orange1]")
+                    self.log(f"{label} → [orange1]无关联响应[/orange1]")
             else:
                 # De-swallowed reason: the AP answered with a NACK carrying a config-error.
                 why = (config_error_name(out.config_error)
                        if out.config_error is not None else (out.detail or "?"))
-                self.log(f"{label} → [yellow]refused: {why}[/yellow]")
+                self.log(f"{label} → [yellow]被拒绝：{why}[/yellow]")
         elif out.result is PinResult.TIMEOUT:
             # Only non-refused timeouts reach here (refused ones log in the loop). Terse.
-            self.log(f"{label} → [dim]{out.detail or 'no reply'}[/dim]")
+            self.log(f"{label} → [dim]{out.detail or '无响应'}[/dim]")

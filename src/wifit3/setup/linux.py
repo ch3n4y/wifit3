@@ -58,9 +58,8 @@ _NEVER_BLACKLIST = frozenset({
     "btusb", "bluetooth", "btrtl", "btintel", "btbcm", "btmtk",
 })
 
-_REMOVED_MSG = ("Removed the udev rule + blocklist for this chipset. Replug the card to restore its "
-                "normal Wi-Fi driver.")
-_REPLUG_MSG = ("udev rule + blocklist installed. Unplug and replug the card, then press START.")
+_REMOVED_MSG = ("已移除此芯片组的 udev 规则 + 黑名单。重新插拔网卡即可恢复正常 Wi-Fi 驱动。")
+_REPLUG_MSG = ("udev 规则 + 黑名单已安装。请重新插拔网卡，然后按「开始」。")
 
 
 def _safe(key: str) -> str:
@@ -298,9 +297,9 @@ def _run_as_root(shell_cmd: str) -> int:
 
 
 def _manual_hint(key: str) -> str:
-    return (f"No pkexec/sudo found. Either run `sudo .venv/bin/python3 -m wifit3`, or install "
-            f"manually: copy the rule to {rule_path(key)} + the blacklist to {blacklist_path(key)}, "
-            f"then `sudo udevadm control --reload-rules` and replug.")
+    return (f"未找到 pkexec/sudo。可改用 `sudo .venv/bin/python3 -m wifit3`，"
+            f"或手动安装：把规则复制到 {rule_path(key)}、把黑名单复制到 {blacklist_path(key)}，"
+            f"然后执行 `sudo udevadm control --reload-rules` 并重新插拔。")
 
 
 def _stage(name: str, text: str | None) -> str | None:
@@ -456,9 +455,9 @@ def install_rule(target: SetupTarget, *, node: str | None = None) -> SetupResult
     if not is_root and group is None:
         return SetupResult(
             ok=False,
-            detail="Add yourself: `sudo usermod -aG sudo $USER`, then log out and back in. "
-                   "Or run `sudo .venv/bin/python3 -m wifit3`.",
-            message="You're not in the sudo or wheel group, so device access can't be granted.")
+            detail="请把自己加入该组：`sudo usermod -aG sudo $USER`，然后注销并重新登录。"
+                   "或者运行 `sudo .venv/bin/python3 -m wifit3`。",
+            message="你不在 sudo 或 wheel 组中，无法授予设备访问权限。")
 
     # As root the access rule is moot (root opens any node). Only the blacklist matters.
     rule_text = emit_udev_text(target, group) if group else None
@@ -468,7 +467,7 @@ def install_rule(target: SetupTarget, *, node: str | None = None) -> SetupResult
         tmp_rule = _stage(f"wifit3-{_safe(target.key)}.rules", rule_text)
         tmp_blacklist = _stage(f"wifit3-{_safe(target.key)}.conf", blacklist_text)
     except OSError as e:
-        return SetupResult(ok=False, message=f"Couldn't stage the setup files: {e}")
+        return SetupResult(ok=False, message=f"无法暂存设置文件：{e}")
 
     try:
         cmd = _install_cmd(tmp_rule=tmp_rule, key=target.key, tmp_blacklist=tmp_blacklist,
@@ -481,20 +480,20 @@ def install_rule(target: SetupTarget, *, node: str | None = None) -> SetupResult
             if method is None:
                 return SetupResult(
                     ok=False, detail=_manual_hint(target.key),
-                    message="No graphical elevator (pkexec/sudo) found to install the udev rule + blocklist.")
+                    message="未找到可用的图形化提权工具（pkexec/sudo），无法安装 udev 规则 + 黑名单。")
             rc = run_privileged(cmd, method)
 
         if rc == 0:
             detail = blacklist_path(target.key) if modules else (
-                "Couldn't determine the kernel module to blacklist. The card may be re-grabbed on "
-                "replug. Tell us the chipset so we can add a fallback hint.")
+                "无法确定要加入黑名单的内核模块。重新插拔后网卡可能被内核重新接管。"
+                "请告知芯片组型号，以便我们添加后备提示。")
             return SetupResult(ok=True, detail=detail, message=_REPLUG_MSG)
         if rc == 126:
             return SetupResult(
                 ok=False, cancelled=True,
-                message="Authorization dismissed. The udev rule + blocklist were not installed.")
+                message="提权已取消，udev 规则 + 黑名单未安装。")
         return SetupResult(ok=False, detail=_manual_hint(target.key),
-                                message=f"Couldn't install the udev rule + blocklist (exit {rc}).")
+                                message=f"无法安装 udev 规则 + 黑名单（退出码 {rc}）。")
     finally:
         for tmp in (tmp_rule, tmp_blacklist):
             if tmp:
@@ -522,7 +521,7 @@ def remove_rule(target: SetupTarget, *, node: str | None = None,
     if not any(Path(rule_path(k)).exists() or Path(blacklist_path(k)).exists() for k in keys):
         return SetupResult(
             ok=True, detail=rpath,
-            message="No wifit3 rules installed for this chipset. Nothing to remove.")
+            message="此芯片组未安装 wifit3 规则，无需移除。")
 
     # Read our modules before the elevated delete wipes our conf; the residual scan then tells the
     # user if a sibling we're *not* removing still holds them.
@@ -536,9 +535,8 @@ def remove_rule(target: SetupTarget, *, node: str | None = None,
             blockers = ", ".join(sorted({k for who in residual.values() for k in who}))
             return SetupResult(
                 ok=True, detail=rpath,
-                message=(f"Removed wifit3's rules for this card. Kernel module(s) {mods} stay "
-                         f"blocked by chipset(s) {blockers} still handed to wifit3. Uninstall those "
-                         f"too to fully restore this card. Replug to apply."))
+                message=(f"已移除此网卡的 wifit3 规则。内核模块 {mods} 仍被已移交给 wifit3 的芯片组 "
+                         f"{blockers} 阻挡，请一并卸载它们才能完全恢复此网卡。重新插拔后生效。"))
         return SetupResult(ok=True, detail=rpath, message=_REMOVED_MSG)
 
     cmd = _remove_cmd(keys, node)
@@ -546,7 +544,7 @@ def remove_rule(target: SetupTarget, *, node: str | None = None,
         rc = _run_as_root(cmd)
         return (_ok() if rc == 0
                 else SetupResult(ok=False, detail=rpath,
-                                      message=f"Couldn't remove the udev rule + blocklist (exit {rc})."))
+                                      message=f"无法移除 udev 规则 + 黑名单（退出码 {rc}）。"))
 
     method = _choose_escalation_method()
     if method is None:
@@ -554,7 +552,7 @@ def remove_rule(target: SetupTarget, *, node: str | None = None,
         return SetupResult(
             ok=False,
             detail=f"sudo rm -f {rmpaths} && sudo udevadm control --reload-rules",
-            message="No graphical elevator (pkexec/sudo) found to remove the udev rule + blocklist.")
+            message="未找到可用的图形化提权工具（pkexec/sudo），无法移除 udev 规则 + 黑名单。")
 
     rc = run_privileged(cmd, method)
     if rc == 0:
@@ -562,9 +560,9 @@ def remove_rule(target: SetupTarget, *, node: str | None = None,
     if rc == 126:
         return SetupResult(
             ok=False, cancelled=True,
-            message="Authorization dismissed. The udev rule + blocklist are still installed.")
+            message="提权已取消，udev 规则 + 黑名单仍保持安装状态。")
     return SetupResult(ok=False, detail=rpath,
-                            message=f"Couldn't remove the udev rule + blocklist (exit {rc}).")
+                            message=f"无法移除 udev 规则 + 黑名单（退出码 {rc}）。")
 
 
 def _dedupe(keys) -> list[str]:
@@ -589,7 +587,7 @@ class SetupLinux(Setup):
     async def install(self, device_id: DeviceID, ui: Prompter) -> DeviceID | None:
         target = target_for_vidpid(device_id.vid, device_id.pid)
         if target is None:
-            ui.error("Device setup", "This card isn't a supported chipset for setup.")
+            ui.error("设备设置", "此网卡不是支持设置流程的芯片组。")
             return None
 
         # Copy is the user's exact wording; do not paraphrase it.
@@ -597,46 +595,46 @@ class SetupLinux(Setup):
         chip = device_id.chipset
         confirmed = await ui.ask(ConfirmInstallDialog(
             chip,
-            title="Wifit3 needs complete control of your wireless card",
-            link_label="udev + modprobe",
+            title="Wifit3 需要完全控制你的无线网卡",
+            link_label="udev + modprobe 规则",
             warning=(
-                f"[bold $text-warning]One-time sudo setup for this card:"
-                f"[/bold $text-warning] (user [cyan]{current_user()}[/cyan]):\n"
-                f"- Creates [bold]udev rules[/bold] giving userland access to this card.\n"
-                f"- Creates [bold]modprobe blocklist[/bold] for this card's drivers.\n"
-                f"- [bold]The card stops working as usual[/bold]: "
-                f"no [$text-warning]airmon[/], no [$text-warning]iw[/], "
-                f"no [$text-warning]wifi[/].\n"
-                f"- [bold cyan]Reversible[/bold cyan]: Press "
-                f"[white bold on red] x [/white bold on red] to [bold]remove the "
-                f"udev + modprobe rules[/bold]."),
-            verb="Install rule + blocklist for",
-            confirm_label="Install"))
+                f"[bold $text-warning]一次性 sudo 设置此网卡："
+                f"[/bold $text-warning]（用户 [cyan]{current_user()}[/cyan]）：\n"
+                f"- 创建 [bold]udev 规则[/bold]，允许用户态访问此网卡。\n"
+                f"- 为网卡驱动创建 [bold]modprobe 黑名单[/bold]。\n"
+                f"- [bold]网卡将无法正常使用[/bold]："
+                f"没有 [$text-warning]airmon[/]，没有 [$text-warning]iw[/]，"
+                f"没有 [$text-warning]wifi[/]。\n"
+                f"- [bold cyan]可逆[/bold cyan]：按 "
+                f"[white bold on red] x [/white bold on red] 即可 [bold]移除 "
+                f"udev + modprobe 规则[/bold]。"),
+            verb="为以下网卡安装 udev 规则 + 黑名单",
+            confirm_label="安装"))
         if not confirmed:
             return None
 
-        ui.status(f"Installing udev rule + blocklist for {chip}…")
+        ui.status(f"正在为 {chip} 安装 udev 规则 + 黑名单…")
         result = await asyncio.to_thread(install_rule, target, node=usb_node_path(device_id))
         if not result.ok:
             if not result.cancelled:
-                ui.error("Couldn't install the device rules", result.message)
+                ui.error("无法安装设备规则", result.message)
             return None
 
         if target.replug_after_modprobe:
             # A kernel-warmed chip can't cold-reset in userland; only a physical replug recovers RX.
             replugged = await ui.wait_replug(device_id)
             if replugged is None:
-                ui.status(f"Rules installed for {chip}. Replug, then press START.")
+                ui.status(f"{chip} 的规则已安装。请重新插拔，再按「开始」。")
                 return None
             device_id = replugged
 
         # install_rule chgrp'd the live node; wait for udev to actually make it writable.
-        ui.status("Applying device access…")
+        ui.status("正在应用设备访问权限…")
         if not await self._wait_for_access(device_id, writable=True):
             ui.error(
-                "Device access didn't take effect",
-                f"The udev rule + blocklist are installed, but {device_id.description} hasn't picked "
-                f"up access yet. Unplug and replug the card, then press START.")
+                "设备访问权限未生效",
+                f"udev 规则 + 黑名单已安装，但 {device_id.description} 尚未获得访问权限。请重新插拔"
+                f"网卡，然后按「开始」。")
             return None
         return device_id
 
@@ -644,19 +642,19 @@ class SetupLinux(Setup):
         target = target_for_vidpid(device_id.vid, device_id.pid)
         name = device_id.chipset
         if target is None:
-            return SetupResult(ok=False, message="This card isn't a supported chipset.")
+            return SetupResult(ok=False, message="此网卡不是受支持的芯片组。")
         plan = await asyncio.to_thread(plan_uninstall, target)
         if not plan.removable:
-            return SetupResult(ok=True, message=f"No wifit3 rules installed for {name}.")
+            return SetupResult(ok=True, message=f"{name} 未安装 wifit3 规则。")
 
         from wifit3.ui.screens.confirm_uninstall import ConfirmUninstallDialog
         choice = await ui.ask(ConfirmUninstallDialog(
             name, "linux", siblings=[s.description for s in plan.siblings],
             has_own_files=plan.has_own_files))
         if choice is None:
-            return SetupResult(ok=False, cancelled=True, message="Uninstall cancelled.")
+            return SetupResult(ok=False, cancelled=True, message="卸载已取消。")
 
-        ui.status(f"Removing wifit3 rules for {device_id.description}…")
+        ui.status(f"正在移除 {device_id.description} 的 wifit3 规则…")
         # Wide radius also removes the sibling chipsets so the shared kernel module is freed.
         also = tuple(s.key for s in plan.siblings) if choice == "wide" else ()
         result = await asyncio.to_thread(
@@ -665,11 +663,11 @@ class SetupLinux(Setup):
             return result
 
         # remove_rule chowned the node back to root; wait for that revoke to land.
-        ui.status("Revoking device access…")
+        ui.status("正在撤销设备访问权限…")
         if not await self._wait_for_access(device_id, writable=False):
             return SetupResult(
                 ok=True, detail=result.detail,
-                message="Rules removed. Replug the card to fully revoke access.")
+                message="规则已移除。重新插拔网卡即可完全撤销访问权限。")
         return SetupResult(ok=True, message=result.message, detail=result.detail)
 
     async def _wait_for_access(self, device_id: DeviceID, *, writable: bool,

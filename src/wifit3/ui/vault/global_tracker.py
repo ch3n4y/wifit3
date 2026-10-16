@@ -18,7 +18,7 @@ class GlobalJobTracker(Widget):
     """
 
     def compose(self) -> ComposeResult:
-        yield Label("No active jobs.", id="job-tracker-label")
+        yield Label("无活跃任务。", id="job-tracker-label")
 
     def on_mount(self) -> None:
         if not hasattr(self.app, "active_jobs"):
@@ -39,7 +39,7 @@ class GlobalJobTracker(Widget):
             
         if not jobs or vault_open:
             self.display = False
-            label.update("No active jobs.")
+            label.update("无活跃任务。")
             return
 
         running = [j for j in jobs if j.status == ToolStatus.RUNNING]
@@ -54,10 +54,10 @@ class GlobalJobTracker(Widget):
         parts = []
         if running:
             job = running[0]
-            parts.append(f"⏳ {job.display_name}: {job.progress_msg}")
+            parts.append(f"⏳ {job.display_name}：{job.progress_msg}")
             if len(running) > 1:
-                parts.append(f"(+{len(running)-1} more)")
+                parts.append(f"（还有 {len(running)-1} 个）")
         if queued:
-            parts.append(f"({len(queued)} queued)")
+            parts.append(f"（{len(queued)} 个排队）")
             
         label.update(" ".join(parts))

@@ -51,23 +51,23 @@ def _frames() -> tuple[Text, Text, list[Text]]:
 # to <=~21 cols (the bubble is 23 wide) and keep to <=7 elements (a message renders 2N-1 rows and
 # the bubble is 14 tall). GREETING plays once on entry; MESSAGES rotate (shuffled, no repeat until
 # the pack is exhausted). Tune wording/spacing live with scripts/ui/wiffy_preview.py ([space] = next).
-_INSTALL_GREETING = ("Hi, I'm WiFFy!", "\nIt looks like", "you are trying to", "HACK THE PLANET!!!", "", "I can help!")
+_INSTALL_GREETING = ("嗨，我是 WiFFy！", "\n看起来你", "正在试图", "黑掉整个地球！！！", "", "我可以帮你！")
 _INSTALL_MESSAGES = [
-    ('\nI can help to recover', '"your" password from', '"your" router.', '', 'Just ask me how!'),
-    ('\nSee Wifite on Netflix:', 'How To Sell Drugs Online:\n  Season 2 Episode 2\n  (6:20)', 'Youngbloods:\n  Season 2 Episode 1\n  (49:00)'),
-    ('', 'If you were on Linux,', "you'd be cracking", 'PMKIDs by now.'),
-    ('', 'I only exist because', 'installing WinUSB', 'is extremely slow.', '', '..up to 5 minutes!'),
-    ('\nThe first rule of', 'wifit3 club is:', '', 'DO NOT TALK ABOUT', 'WIFIT3 CLUB'),
-    ('', 'I want to apologize', 'in advance for', 'dropping handshakes.'),
-    ('Remember:', '', 'Only audit networks', 'that you own!', '', '                lol'),
+    ('\n我能帮你从', '「你的」路由器里', '找回「你的」密码。', '', '问我就行！'),
+    ('\nNetflix 上的 Wifite：', 'How To Sell Drugs Online:\n  第 2 季第 2 集\n  (6:20)', 'Youngbloods:\n  第 2 季第 1 集\n  (49:00)'),
+    ('', '如果你在 Linux 上，', '现在早就在破解', '一堆 PMKID 了。'),
+    ('', '我存在只是因为', '安装 WinUSB', '实在太慢了。', '', '……最多五分钟！'),
+    ('\nwifit3 俱乐部的', '第一条规则是：', '', '不许谈论', 'WIFIT3 俱乐部'),
+    ('', '我要提前为', '丢掉的握手', '道个歉。'),
+    ('记住：', '', '只审计你自己', '拥有的网络！', '', '                哈哈'),
     # ('Everyone asks', '"WiFi?"', '', 'but nobody asks', '"HowFi?"'),
     # ('Did you know?', '', 'The 2.4GHz wave is', '~6 in / 12.5cm long.', '', '5GHz is half that:', '~3in / 6cm.'),
 ]
-_UNINSTALL_GREETING = ("You did it? You hacked", "the ENTIRE planet?", "", "Restoring driver now...")
+_UNINSTALL_GREETING = ("你成功了？你黑掉了", "整个地球？", "", "正在恢复驱动……")
 _UNINSTALL_MESSAGES = [
-    ('Your card now goes', 'back to being a', 'boring Wi-Fi card.', '', 'ZeroCool would be', 'so disappointed.'),
-    ("I'll be here when", 'you want to', 'HACK THE PLANET again!'),
-    ("You'll be back", "they always come back"),
+    ('你的网卡即将', '变回一块', '无聊的 Wi-Fi 网卡。', '', 'ZeroCool 会很', '失望的。'),
+    ('等你想再次', '黑掉地球时，', '我一直都在！'),
+    ('你会回来的', '他们总会回来。'),
 ]
 
 INSTALL_LINES = (_INSTALL_GREETING, _INSTALL_MESSAGES)

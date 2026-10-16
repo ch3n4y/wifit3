@@ -37,10 +37,10 @@ def campaign_blocked(cls, ap) -> Optional[str]:
     the AP is silenced, another campaign owns the radio, or the campaign's own
     ineligible_reason (hidden SSID, WPS locked, unconfirmed encryption, …)."""
     if Config.is_silenced(ap.bssid):
-        return "AP silenced"
+        return "AP 已静音"
     active = Campaign.active
     if active is not None and active.key != cls.key:
-        return f"Blocked ({active.key} is active)"
+        return f"已阻止（{active.key} 正在运行）"
     return cls.ineligible_reason(ap)
 
 
@@ -120,19 +120,19 @@ def count_handshakes(ap):
 def fakeauth_value_markup(campaign, now: float, compact: bool = False) -> str:
     """Just the fake-auth status value (no 'Fake-Auth:' label)."""
     if campaign is None:
-        return "[dim]Off[/dim]"
+        return "[dim]关闭[/dim]"
     fa = campaign.fake_auth
     if fa.state == "associated":
         countdown = ""
         if fa.next_reauth_at and not compact:
             secs = max(0, int(fa.next_reauth_at - now))
-            countdown = f" [dim](re-auth in {secs}s)[/dim]"
-        return f"[green]✓ Associated[/green]{countdown}"
+            countdown = f" [dim]（{secs} 秒后重新认证）[/dim]"
+        return f"[green]✓ 已关联[/green]{countdown}"
     if fa.state == "authenticating":
-        return "[yellow]Associating…[/yellow]"
+        return "[yellow]关联中…[/yellow]"
     if fa.state == "failed":
-        return f"[red]Failed: {escape(fa.fail_reason or 'unknown')}[/red]"
-    return "[dim]Idle[/dim]"
+        return f"[red]失败：{escape(fa.fail_reason or '未知')}[/red]"
+    return "[dim]空闲[/dim]"
 
 
 def wep_status_lines(ap, array, campaign, now: float) -> list[str]:
@@ -145,8 +145,8 @@ def wep_status_lines(ap, array, campaign, now: float) -> list[str]:
     lines = []
     if campaign is not None:
         lines.append(
-            f"[dim]Fake-Auth:[/dim] {fakeauth_value_markup(campaign, now, compact=True)}")
-    lines.append(f"[dim]Usable IVs:[/dim] {ivs}")
+            f"[dim]伪认证：[/dim] {fakeauth_value_markup(campaign, now, compact=True)}")
+    lines.append(f"[dim]可用 IV：[/dim] {ivs}")
     return lines
 
 
@@ -159,10 +159,10 @@ def pmf_status_markup(ap) -> str:
     """PMF status for the Focus footer.
     Disabled (dim) → Optional (orange) → Required (red)."""
     if ap.pmf_required:
-        return "[red]Required[/red]"
+        return "[red]必需[/red]"
     if ap.pmf_capable:
-        return "[dark_orange]Optional[/dark_orange]"
-    return "[dim]Disabled[/dim]"
+        return "[dark_orange]可选[/dark_orange]"
+    return "[dim]已禁用[/dim]"
 
 
 def router_identity_details(ap: AccessPoint) -> str | None:
@@ -174,31 +174,31 @@ def router_identity_details(ap: AccessPoint) -> str | None:
     if ident.model:
         model_src = getattr(ident, "model_source", None) or ident.get(IdKey.MODEL_NAME)[1] or ident.get(IdKey.MODEL_NUMBER)[1]
         src_label = model_src.label if model_src else ""
-        rows.append(f"[dim]Model:[/dim] {escape(ident.model)} [dim]({src_label})[/dim]")
+        rows.append(f"[dim]型号：[/dim] {escape(ident.model)} [dim]({src_label})[/dim]")
     if ident.manufacturer:
         mfr_src = getattr(ident, "manufacturer_source", None) or ident.get(IdKey.MANUFACTURER)[1]
         src_label = mfr_src.label if mfr_src else ""
-        rows.append(f"[dim]Manufacturer:[/dim] {escape(ident.manufacturer)} [dim]({src_label})[/dim]")
+        rows.append(f"[dim]厂商：[/dim] {escape(ident.manufacturer)} [dim]({src_label})[/dim]")
     if ident.device_name and ident.device_name != ident.model:
         dev_src = ident.get(IdKey.DEVICE_NAME)[1]
         src_label = dev_src.label if dev_src else ""
-        rows.append(f"[dim]Device Name:[/dim] {escape(ident.device_name)} [dim]({src_label})[/dim]")
+        rows.append(f"[dim]设备名称：[/dim] {escape(ident.device_name)} [dim]({src_label})[/dim]")
     if ident.serial_number:
         sn_src = ident.get(IdKey.SERIAL_NUMBER)[1]
         src_label = sn_src.label if sn_src else ""
-        rows.append(f"[dim]Serial:[/dim] {escape(ident.serial_number)} [dim]({src_label})[/dim]")
+        rows.append(f"[dim]序列号：[/dim] {escape(ident.serial_number)} [dim]({src_label})[/dim]")
     if ident.device_type:
         dt_src = ident.get(IdKey.DEVICE_TYPE)[1]
         src_label = dt_src.label if dt_src else ""
-        rows.append(f"[dim]Device Type:[/dim] {escape(ident.device_type)} [dim]({src_label})[/dim]")
+        rows.append(f"[dim]设备类型：[/dim] {escape(ident.device_type)} [dim]({src_label})[/dim]")
 
     wsc_mfr = ident.get_source_value(IdKey.MANUFACTURER, IdSource.WSC_M1) or ident.get_source_value(IdKey.MANUFACTURER, IdSource.WSC_BEACON)
     if wsc_mfr and wsc_mfr != ident.manufacturer:
-        rows.append(f"[dim]Chipset:[/dim] {escape(wsc_mfr)} [dim](WSC)[/dim]")
+        rows.append(f"[dim]芯片组：[/dim] {escape(wsc_mfr)} [dim](WSC)[/dim]")
 
     oui_vendor = ident.get_source_value(IdKey.MANUFACTURER, IdSource.OUI)
     if oui_vendor and (oui_vendor != ident.manufacturer or mfr_src != IdSource.OUI):
-        rows.append(f"[dim]IEEE OUI:[/dim] {escape(oui_vendor)}")
+        rows.append(f"[dim]IEEE OUI：[/dim] {escape(oui_vendor)}")
 
     return "\n".join(rows)
 
@@ -214,14 +214,14 @@ def status_under_dash(ap, array, now: float) -> list[str]:
 
     if is_wep(ap):
         return wep_status_lines(ap, array, None, now)
-    lines = [f"[dim]Encryption:[/dim] {format_encryption_markup(ap, detailed=True)}"]
+    lines = [f"[dim]加密：[/dim] {format_encryption_markup(ap, detailed=True)}"]
     parts = []
     if ap.akms or ap.wpa3:              # RSN (WPA2/3): PMF is meaningful
-        parts.append(f"[dim]PMF:[/dim] {pmf_status_markup(ap)}")
+        parts.append(f"[dim]PMF：[/dim] {pmf_status_markup(ap)}")
     if getattr(ap, "wps", None):
         lock = "[red]🔒[/red]" if ap.wps_locked else "[green]🔓[/green]"
         ver = f"{ap.wps_version} " if ap.wps_version else ""
-        parts.append(f"[dim]WPS:[/dim] {ver}{lock}")
+        parts.append(f"[dim]WPS：[/dim] {ver}{lock}")
     if parts:
         lines.append("  ·  ".join(parts))
     return lines
@@ -256,62 +256,62 @@ def status_headlines(ap, array, vault) -> list[str]:
 
     # 4. Recovered credentials, when idle: WEP key / PSK (WPS- or handshake-derived).
     if ap.wep_key is not None or vault.has_wep_key(ap):
-        return ["[black bold on green] ✓ WEP key recovered [/black bold on green]",
-                "[dim]see the event log for the key[/dim]"]
+        return ["[black bold on green] ✓ 已恢复 WEP 密钥 [/black bold on green]",
+                "[dim]密钥见事件日志[/dim]"]
     if vault.known_psk(ap):
-        return ["[black bold on green] ✓ PSK recovered [/black bold on green]",
-                "[dim]see the event log for the passphrase[/dim]"]
+        return ["[black bold on green] ✓ 已恢复 PSK [/black bold on green]",
+                "[dim]口令见事件日志[/dim]"]
 
     if Config.is_silenced(ap.bssid):
-        return ["[dim]● Silenced[/dim]",
-                "[dim]campaigns off, handshakes ignored · press s to resume[/dim]"]
+        return ["[dim]● 已静音[/dim]",
+                "[dim]攻击已关闭，忽略握手 · 按 s 恢复[/dim]"]
 
     # 4-5. Passive capture state: captured / partial / listening.
     if wep:
         n_ivs = ap.wep.unique_ivs if ap.wep else 0
         if n_ivs:
-            return ["[green]● Listening for WEP IVs[/green]",
-                    f"[dim]{n_ivs:,} captured · press Replay to generate more[/dim]"]
-        return ["[green]● Listening for WEP IVs[/green]"]
+            return ["[green]● 正在监听 WEP IV[/green]",
+                    f"[dim]已捕获 {n_ivs:,} · 按 Replay 生成更多[/dim]"]
+        return ["[green]● 正在监听 WEP IV[/green]"]
 
     n_complete, n_partial, msg_counts = count_handshakes(ap)
     n_pmkid = sum(1 for hs in ap.handshakes.values() if hs.pmkid and pmkid_crackable(hs))
     if n_complete or n_pmkid:
         bits = []
         if n_complete:
-            bits.append(f"handshake ×{n_complete}")
+            bits.append(f"握手 ×{n_complete}")
         if n_pmkid:
             bits.append(f"PMKID ×{n_pmkid}")
-        return ["[black bold on green] ✓ Captured [/black bold on green] " + " · ".join(bits),
-                f"[dim]saved to {Config.captures_dir}[/dim]"]
+        return ["[black bold on green] ✓ 已捕获 [/black bold on green] " + " · ".join(bits),
+                f"[dim]已保存到 {Config.captures_dir}[/dim]"]
     if n_partial:
         breakdown = " · ".join(f"M{m}×{msg_counts[m]}" for m in sorted(msg_counts))
-        return ["[yellow]◌ Capturing handshake[/yellow]",
-                f"[dim]{breakdown}: deauth a client to force a re-handshake[/dim]"]
+        return ["[yellow]◌ 正在捕获握手[/yellow]",
+                f"[dim]{breakdown}：解除认证客户端以强制重新握手[/dim]"]
 
     if ap.wpa3 and not ap.transition_mode:
-        return ["[dim]● WPA3/SAE: passive capture not applicable[/dim]"]
+        return ["[dim]● WPA3/SAE：不适用被动捕获[/dim]"]
 
     if enc in ("OPEN", ""):
-        return ["[dim]● Open network: no handshake to capture[/dim]"]
-    return ["[green]● Listening for handshake + PMKID[/green]",
-            "[dim]passive: deauth a client to force a handshake[/dim]"]
+        return ["[dim]● 开放网络：无握手可捕获[/dim]"]
+    return ["[green]● 正在监听握手 + PMKID[/green]",
+            "[dim]被动：解除认证客户端以强制握手[/dim]"]
 
 
 def card_identity(array: WlanArray) -> tuple[str, str | None]:
     """``(chipset/label, own_bssid_or_None)`` for the card endpoint."""
     if array is None:
-        return "no card", None
+        return "无网卡", None
     if array.members is None or len(array.members) == 0:
-        return "no card", None
+        return "无网卡", None
     if len(array.members) > 1:
-        return f"{len(array.members)} cards", None
+        return f"{len(array.members)} 张网卡", None
     iface = array.preferred or array.members[0]
     label = iface.chipset
     if not label:
         # legacy fallback: strip the "(Make Model)" suffix off a description/name
-        label = str(iface.description or iface.name or "card").split("(")[0].strip()
-    label = label or "card"
+        label = str(iface.description or iface.name or "网卡").split("(")[0].strip()
+    label = label or "网卡"
     mac = iface.driver.mac_address
     if isinstance(mac, (bytes, bytearray)) and len(mac) == 6:
         mac = ":".join(f"{b:02x}" for b in mac)

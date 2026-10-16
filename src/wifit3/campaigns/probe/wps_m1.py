@@ -76,7 +76,7 @@ class WpsM1Probe(BaseApProbe):
         fake_mac = await iface.set_fake_mac(None, bssid_bytes)
         our_mac_str = fake_mac or (iface.mac_address if isinstance(iface.mac_address, str) else None)
         if our_mac_str is None:
-            return ProbeResult(False, detail="active monitor unavailable")
+            return ProbeResult(False, detail="主动监听不可用")
         our_mac = str_to_mac(our_mac_str)
 
         assoc = Association(
@@ -89,7 +89,7 @@ class WpsM1Probe(BaseApProbe):
         assoc.start()
         try:
             if not await assoc.associate(attempts=2):
-                return ProbeResult(False, detail=assoc.fail_reason or "no association response")
+                return ProbeResult(False, detail=assoc.fail_reason or "无关联响应")
             transport.start()
             attrs = await _trigger_m1(transport, bssid_bytes, our_mac)
         finally:
@@ -102,7 +102,7 @@ class WpsM1Probe(BaseApProbe):
             await iface.clear_fake_mac()
 
         if not attrs or not apply_wsc_identity(ap.identity, IdSource.WSC_M1, attrs):
-            return ProbeResult(False, detail="no WPS M1 response")
+            return ProbeResult(False, detail="无 WPS M1 响应")
 
         return ProbeResult(
             True,

@@ -58,8 +58,8 @@ def device_scan_summary(members) -> Optional[str]:
         if hi:
             bands.append("[bold green]5G[/]")
         tags.append(f"[bold]{m.chipset}[/] ({'+'.join(bands)})")
-    noun = "device" if len(members) == 1 else "devices"
-    return f"Scanning with [bold cyan]{len(members)}[/] {noun}: {', '.join(tags)}"
+    noun = "个网卡"
+    return f"使用 [bold cyan]{len(members)}[/] {noun}扫描：{'，'.join(tags)}"
 
 
 class _ChannelReadout(HeaderClock):
@@ -96,20 +96,20 @@ class ScannerView(Screen):
     app: "WifiteApp"
 
     BINDINGS = [
-        Binding("q", "app.quit", "Quit", show=True),
-        Binding("c", "change_channel", "Channel Filter", show=True),
-        Binding("e", "focus_encryption", "Encryption", show=True),
-        Binding("s", "cycle_sort", "Sort Col", show=True),
-        Binding("o", "toggle_sort_dir", "Sort Asc/Desc", show=True),
-        Binding("f", "focus_filter", "Filter", show=True),
-        Binding("/", "focus_filter", "Filter", show=False),
-        Binding("l", "toggle_log", "Toggle Log", show=True),
+        Binding("q", "app.quit", "退出", show=True),
+        Binding("c", "change_channel", "信道筛选", show=True),
+        Binding("e", "focus_encryption", "加密", show=True),
+        Binding("s", "cycle_sort", "排序列", show=True),
+        Binding("o", "toggle_sort_dir", "升/降序", show=True),
+        Binding("f", "focus_filter", "筛选", show=True),
+        Binding("/", "focus_filter", "筛选", show=False),
+        Binding("l", "toggle_log", "切换日志", show=True),
         Binding("w", "wps_pbc_mode", "WPS PBC", show=True),
-        Binding("v", "open_vault", "Vault", show=True),
-        Binding("home", "scroll_home", "Top", show=False, priority=True),
-        Binding("end", "scroll_end", "Bottom", show=False, priority=True),
-        Binding("g", "scroll_home", "Top", show=False, priority=True),
-        Binding("G", "scroll_end", "Bottom", show=False, priority=True),
+        Binding("v", "open_vault", "保险库", show=True),
+        Binding("home", "scroll_home", "顶部", show=False, priority=True),
+        Binding("end", "scroll_end", "底部", show=False, priority=True),
+        Binding("g", "scroll_home", "顶部", show=False, priority=True),
+        Binding("G", "scroll_end", "底部", show=False, priority=True),
     ]
 
     # How long to flash the 🥓 cell when a beacon arrives.
@@ -158,17 +158,17 @@ class ScannerView(Screen):
         table.focus()
         array = self.app.array
 
-        log.write(treelog.header("Scanner initialized"))
+        log.write(treelog.header("扫描已初始化"))
         rows: List[str] = []
         summary = self.app.vault.summary()
         if summary:
-            rows.append(f"Existing [bold]{Config.captures_dir}/[/bold]: {summary}")
+            rows.append(f"已有 [bold]{Config.captures_dir}/[/bold]：{summary}")
         if array:
             device_line = device_scan_summary(array.members)
             if device_line:
                 rows.append(device_line)
         else:
-            rows.append("[yellow]No active interface[/yellow]")
+            rows.append("[yellow]无活动网卡[/yellow]")
         for i, row in enumerate(rows):
             log.write(treelog.leaf(row) if i == len(rows) - 1 else treelog.branch(row))
 
@@ -353,19 +353,19 @@ class ScannerView(Screen):
         if ev.kind == CaptureKind.HANDSHAKE:
             pair = ev.pair_label or "?"
             msg = (
-                f"[bold green]✓ HANDSHAKE[/bold green] ({pair}) on "
-                f"[bold cyan]{ap_label}[/bold cyan] from [bold]{client}[/bold]"
+                f"[bold green]✓ 握手[/bold green] ({pair}) 于 "
+                f"[bold cyan]{ap_label}[/bold cyan]，来自 [bold]{client}[/bold]"
             )
             save_result = self.app.vault.save_handshake(ap, ev.client_mac)
         elif ev.kind == CaptureKind.UNCRACKABLE_HANDSHAKE:
             msg = (
-                f"[bold yellow]● {escape(ev.value or '?')} 4-way[/bold yellow] on "
-                f"[bold cyan]{ap_label}[/bold cyan] [dim](not crackable, -m 22000)[/dim]"
+                f"[bold yellow]● {escape(ev.value or '?')} 四次握手[/bold yellow] 于 "
+                f"[bold cyan]{ap_label}[/bold cyan] [dim]（不可破解，-m 22000）[/dim]"
             )
         elif ev.kind == CaptureKind.PMKID:
             msg = (
-                f"[bold green]✓ PMKID[/bold green] on "
-                f"[bold cyan]{ap_label}[/bold cyan] from [bold]{client}[/bold]"
+                f"[bold green]✓ PMKID[/bold green] 于 "
+                f"[bold cyan]{ap_label}[/bold cyan]，来自 [bold]{client}[/bold]"
             )
             save_result = self.app.vault.save_pmkid(ap, ev.client_mac)
         elif ev.kind == CaptureKind.DECLOAK:
@@ -374,30 +374,30 @@ class ScannerView(Screen):
                 self.app.persist_config()
             method_label = DECLOAK_METHOD_LABELS.get(ev.method or "", ev.method or "?")
             self._write_log(Text.from_markup(treelog.header(
-                f"[bold]Decloaked[/bold] [cyan]{escape(ev.bssid)}[/cyan] → "
+                f"[bold]已解除隐藏[/bold] [cyan]{escape(ev.bssid)}[/cyan] → "
                 f"[green]{escape(ev.ssid or '')}[/green] "
-                f"[dim]via {method_label}[/dim]"), emoji=False))
+                f"[dim]经由 {method_label}[/dim]"), emoji=False))
             return
         elif ev.kind == CaptureKind.WEP_KEY:
-            msg = (f"[bold green]✓ WEP KEY[/bold green] on "
+            msg = (f"[bold green]✓ WEP 密钥[/bold green] 于 "
                    f"[bold cyan]{ap_label}[/bold cyan] = {escape(wep_key_ascii(ev.value or ''))}")
         elif ev.kind == CaptureKind.WPS_PIN:
-            msg = (f"[bold green]✓ WPS PIN[/bold green] on "
+            msg = (f"[bold green]✓ WPS PIN[/bold green] 于 "
                    f"[bold cyan]{ap_label}[/bold cyan] = {escape(ev.value or EMPTY_PIN_LABEL)}")
         elif ev.kind == CaptureKind.WPS_PSK:
-            msg = (f'[bold green]✓ WPS PSK[/bold green] on '
+            msg = (f'[bold green]✓ WPS PSK[/bold green] 于 '
                    f'[bold cyan]{ap_label}[/bold cyan] = "{escape(ev.value or "")}"')
         elif ev.kind == CaptureKind.WPS_PBC:
-            msg = (f'[bold green]✓ WPS PSK[/bold green] [dim](via PushButton)[/dim] on '
+            msg = (f'[bold green]✓ WPS PSK[/bold green] [dim]（经按钮模式）[/dim] 于 '
                    f'[bold cyan]{ap_label}[/bold cyan] = "{escape(ev.value or "")}"')
         else:
             return  # eapol events suppressed in scanner
         # Leading space aligns the ✓ win with the ● / ├─► / └─► tree log above it.
         self._write_log(Text.from_markup(f" {msg}", emoji=False))
         if save_result is not None:
-            verb = "saved" if save_result.was_new else "already saved as"
+            verb = "已保存" if save_result.was_new else "已保存为"
             self._write_log(Text.from_markup(treelog.leaf(
-                f"[dim]({verb} {escape(save_result.path.name)})[/dim]"), emoji=False))
+                f"[dim]（{verb} {escape(save_result.path.name)}）[/dim]"), emoji=False))
         title = CAPTURE_TOAST_TITLES.get(ev.kind)
         if title:
             name = ev.ssid or ev.bssid
@@ -406,7 +406,7 @@ class ScannerView(Screen):
             else:
                 pair = ev.pair_label or ("M1" if ev.kind == CaptureKind.PMKID else None)
                 full_title = f"{title} ({pair})" if pair else title
-                body = (f"[bold]{escape(name)}[/bold] on channel [bold]{ap.channel}[/bold] "
+                body = (f"[bold]{escape(name)}[/bold] 于信道 [bold]{ap.channel}[/bold] "
                         f"[dim bold](BSSID: {escape(ap.bssid)})[/dim bold]")
                 self.notify(body, title=full_title, timeout=6)
 
@@ -460,7 +460,7 @@ class ScannerView(Screen):
                 continue
             if self.app.vault.has_psk(ap):
                 ssid = escape(ap.ssid or ap.bssid)
-                self._write_log(f"  [dim]({ssid} already captured, PSK: [bold]{escape(self.app.vault.known_psk(ap) or '?')}[/bold])[/dim]")
+                self._write_log(f"  [dim]（{ssid} 已捕获，PSK：[bold]{escape(self.app.vault.known_psk(ap) or '?')}[/bold]）[/dim]")
             elif not launched:
                 launched = True
                 self._on_pbc_window(ap)
@@ -470,16 +470,16 @@ class ScannerView(Screen):
         startup + the 'w' toggle."""
         if self.app.pbc_enabled:
             self._write_log(treelog.header(
-                "[bold]WPS PushButton Extraction[/bold] is "
-                "[bold green]enabled[/bold green] [dim](press [bold]w[/bold] to toggle)[/dim]",
+                "[bold]WPS 按钮模式提取[/bold]：[bold green]已启用[/bold green] "
+                "[dim]（按 [bold]w[/bold] 切换）[/dim]",
                 color="green"))
             self._write_log(treelog.leaf(
-                "[dim](automatically retrieves PSK when [bold italic]any[/bold italic] "
-                "WPS button is pressed)[/dim]"))
+                "[dim]（当 [bold italic]任意[/bold italic] "
+                "WPS 按钮被按下时自动获取 PSK）[/dim]"))
         else:
             self._write_log(treelog.header(
-                "[bold]WPS PushButton Extraction[/bold] is "
-                "[orange1]disabled[/orange1] [dim](detect only, press [bold]w[/bold] to toggle)[/dim]",
+                "[bold]WPS 按钮模式提取[/bold]：[orange1]已禁用[/orange1] "
+                "[dim]（仅检测，按 [bold]w[/bold] 切换）[/dim]",
                 color="orange1"))
 
     def _poll_pbc(self) -> None:
@@ -494,16 +494,16 @@ class ScannerView(Screen):
             return
         label = escape(ap.ssid or ap.bssid)
         self._write_log(
-            f"[bold cyan]WPS PushButton [italic]auto-invade:[/italic][/bold cyan] "
-            f"[bold green]Open Window[/bold green] on [bold]{label}[/bold] "
+            f"[bold cyan]WPS 按钮模式 [italic]自动入侵：[/italic][/bold cyan] "
+            f"[bold green]窗口开启[/bold green] 于 [bold]{label}[/bold] "
             f"[dim](CH {ap.channel})[/dim]")
         if not self.app.pbc_enabled:
-            self._write_log(treelog.leaf("[dim]auto-invade off: press [bold]w[/bold] to enable[/dim]"))
+            self._write_log(treelog.leaf("[dim]自动入侵已关闭：按 [bold]w[/bold] 启用[/dim]"))
             return
         if self.app.vault.has_psk(ap):
             wps = self.app.vault.wps_capture(ap)
             where = f" [dim]({escape(Path(wps.path).name)})[/dim]" if wps else ""
-            self._write_log(treelog.leaf(f"[italic]already captured[/italic]{where}"))
+            self._write_log(treelog.leaf(f"[italic]已捕获[/italic]{where}"))
             return
         if self._pbc_capturing:
             return
@@ -517,8 +517,8 @@ class ScannerView(Screen):
         self._pbc_capturing = True
         label = escape(ap.ssid or ap.bssid)
         self._write_log(treelog.branch(
-            f"[cyan]invading[/cyan] [bold]{label}[/bold]: pausing hop, "
-            f"tuning [cyan]CH {ap.channel}[/cyan]…"))
+            f"[cyan]入侵中[/cyan] [bold]{label}[/bold]：暂停跳频，"
+            f"调谐至 [cyan]CH {ap.channel}[/cyan]…"))
         try:
             await array.stop_hopping()
             await array.set_channel(ap.channel)
@@ -529,22 +529,22 @@ class ScannerView(Screen):
                 ap.wps_pbc_psk = outcome.psk
                 name = escape(outcome.ssid or ap.ssid or ap.bssid)
                 self._write_log(treelog.branch_ok(
-                    f"[black bold on cyan] PSK for {name}: \"{escape(outcome.psk)}\" [/black bold on cyan]"))
+                    f"[black bold on cyan] {name} 的 PSK：\"{escape(outcome.psk)}\" [/black bold on cyan]"))
                 try:
                     result = self.app.vault.save_wps_pbc(ap, outcome.psk)
                     if result is None:
-                        self._write_log(treelog.leaf("[dim](PSK not saved to disk)[/dim]"))
+                        self._write_log(treelog.leaf("[dim]（PSK 未保存到磁盘）[/dim]"))
                     else:
-                        verb = "saved" if result.was_new else "already saved as"
+                        verb = "已保存" if result.was_new else "已保存为"
                         self._write_log(treelog.leaf(
                             f"[cyan]{verb}[/cyan] [dim]{escape(result.path.name)}[/dim]"))
                 except Exception:
-                    self._write_log(treelog.leaf("[dim](PSK not saved to disk)[/dim]"))
+                    self._write_log(treelog.leaf("[dim]（PSK 未保存到磁盘）[/dim]"))
             else:
                 self._write_log(treelog.leaf_fail(
                     f"{outcome.result.value} [dim]({escape(outcome.detail)})[/dim]"))
         except Exception as exc:                       # never let an invade kill the scanner
-            self._write_log(treelog.leaf_fail(f"capture error: {escape(str(exc))}"))
+            self._write_log(treelog.leaf_fail(f"捕获错误：{escape(str(exc))}"))
         finally:
             self._pbc_capturing = False
             if self.app.screen is self:
@@ -588,13 +588,13 @@ class ScannerView(Screen):
         log = self.query_one("#system-log", RichLog)
         array = self.app.array
         if not array:
-            log.write("[bold red][!] No active interface.[/bold red]")
+            log.write("[bold red][!] 无活动网卡。[/bold red]")
             return
 
         supported = array.supported_channels
         if not supported:
             log.write(
-                "[bold red][!] Driver did not declare SUPPORTED_CHANNELS.[/bold red]"
+                "[bold red][!] 驱动未声明 SUPPORTED_CHANNELS。[/bold red]"
             )
             return
 
@@ -608,7 +608,7 @@ class ScannerView(Screen):
         self, result: Optional[List[int]]
     ) -> None:
         if result is None:
-            self.query_one("#system-log", RichLog).write("[dim]Channel filter unchanged.[/dim]")
+            self.query_one("#system-log", RichLog).write("[dim]信道筛选未变更。[/dim]")
         else:
             await self._apply_channel_filter(result)
         self.query_one(FilterBar).set_channels(self._channel_filter)
@@ -630,13 +630,12 @@ class ScannerView(Screen):
             f"[bold cyan]{name}[/bold cyan] [dim]({rngs})[/dim]"
             for name, rngs in band_ranges(channels)
         ]
-        summary = " and ".join(pieces) if pieces else "[dim]no channels[/dim]"
-        log.write(f" [dim]●[/dim] [bold]Channel hopping[/bold] across {summary}")
+        summary = " 和 ".join(pieces) if pieces else "[dim]无信道[/dim]"
+        log.write(f" [dim]●[/dim] [bold]信道跳频[/bold]：{summary}")
         if dropped:
-            noun = "AP" if dropped == 1 else "APs"
             log.write(
-                treelog.leaf(f"[dim]Cleared [bold]{dropped}[/bold] "
-                             f"{noun} outside the filter[/dim]")
+                treelog.leaf(f"[dim]已清除筛选外的 [bold]{dropped}[/bold] "
+                             f"个 AP[/dim]")
             )
 
     # ----- Filter bar --------------------------------------------------------

@@ -127,7 +127,7 @@ def test_replayable_leaf_includes_byte_count(mocker):
     r._current = cand
     r._trial_gain = r._MIN_TRIAL_GAIN   # immediate winner
     r._judge(gain=r._MIN_TRIAL_GAIN)
-    assert any("(68 B)" in m and "replayable" in m for m in logs), logs
+    assert any("(68 B)" in m and "可重放" in m for m in logs), logs
 
 
 def test_failed_to_replay_leaf_includes_byte_count(mocker):
@@ -140,7 +140,7 @@ def test_failed_to_replay_leaf_includes_byte_count(mocker):
     r._trial_gain = 0
     r._trial_started = _time.time() - r._TRIAL_WINDOW - 1     # past window
     r._judge(gain=0)
-    assert any("(84 B)" in m and "failed to replay" in m for m in logs), logs
+    assert any("(84 B)" in m and "重放失败" in m for m in logs), logs
 
 
 def test_build_replay_frame_readdresses_to_tods(mocker):

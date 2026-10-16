@@ -29,9 +29,9 @@ class DeauthCampaign(Campaign):
 
     button_id = "btn-deauth"
     key = "deauth"
-    hotkey = ("D", "AutoDeauth")
-    idle_label = "AutoDeauth"
-    run_label = "Stop Deauth"
+    hotkey = ("D", "解除认证")
+    idle_label = "自动解除认证"
+    run_label = "停止解除认证"
     idle_variant = "primary"
     run_variant = "error"
 
@@ -44,12 +44,12 @@ class DeauthCampaign(Campaign):
         return bool(set(_PSK_AKMS) & set(getattr(ap, "akm_suites", None) or ()))
 
     def status_under_card(self) -> str:
-        return "● Deauth"
+        return "● 解除认证"
 
     def status_headlines(self, vault) -> list[str]:
-        return ["[bold cyan]● Deauth[/bold cyan] forcing a re-handshake",
-                f"[dim]client acks:{self.client_acks}/{self.client_sent} · "
-                f"bcast:{self.bcast_sent}[/dim]"]
+        return ["[bold cyan]● 解除认证[/bold cyan] 强制重新握手",
+                f"[dim]客户端 ACK：{self.client_acks}/{self.client_sent} · "
+                f"广播：{self.bcast_sent}[/dim]"]
 
     def __init__(self, array, target, log=None):
         super().__init__(ap=target, array=array)
@@ -88,20 +88,20 @@ class DeauthCampaign(Campaign):
 
     async def _loop(self) -> None:
         self._baseline = self._crackable_count()
-        self.log(treelog.leaf(f"targeting {len(self._target_clients())} client(s) + broadcast"))
+        self.log(treelog.leaf(f"目标 {len(self._target_clients())} 个客户端 + 广播"))
         async with self.array.lease(channel=self.target.channel, iface=self.iface) as iface:
             while not self.stopped and not self._new_capture():
                 for mac in self._target_clients():
                     if self.stopped or self._new_capture():
                         break
-                    self.log(f"Deauthing client [cyan]{mac}[/cyan]…")
+                    self.log(f"正在解除认证客户端 [cyan]{mac}[/cyan]…")
                     res = await iface.deauth_client(self.target.bssid, mac, rounds=BURST_ROUNDS)
                     self.client_sent += res.total_sent
                     self.client_acks += res.total_acked
                     await self._settle()
                 if self.stopped or self._new_capture():
                     break
-                self.log("Deauthing [cyan]broadcast[/cyan]…")
+                self.log("正在解除认证 [cyan]广播[/cyan]…")
                 self.bcast_sent += await iface.deauth_broadcast(self.target.bssid,
                                                                 count=BCAST_COUNT)
                 await self._settle()

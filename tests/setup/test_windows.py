@@ -69,9 +69,9 @@ def test_signed32_roundtrips_negative_wdi_codes():
 
 
 def test_wdi_message_known_codes():
-    assert _wdi_message(0) == "WinUSB installed."
-    assert "Administrator" in _wdi_message(-15)
-    assert "unplugged" in _wdi_message(-4)
+    assert _wdi_message(0) == "WinUSB 已安装。"
+    assert "管理员" in _wdi_message(-15)
+    assert "拔出" in _wdi_message(-4)
 
 
 def test_wdi_message_unknown_code_is_descriptive():

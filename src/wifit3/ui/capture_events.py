@@ -21,10 +21,10 @@ from wifit3.crack import handshake as wpa
 # Centralised so Scanner + Focus render the same wording (and future decloak
 # sources only need to be added here).
 DECLOAK_METHOD_LABELS = {
-    "beacon": "Beacon Leak",
-    "probe_resp": "Probe Response",
-    "assoc_req": "Association Request",
-    "reassoc_req": "Reassociation Request",
+    "beacon": "信标泄露",
+    "probe_resp": "探测响应",
+    "assoc_req": "关联请求",
+    "reassoc_req": "重关联请求",
 }
 
 
@@ -45,9 +45,9 @@ class CaptureKind(str, Enum):
 
 # Toast title per capture *win*; kinds absent here are log-only. Shared by both views.
 CAPTURE_TOAST_TITLES = {
-    CaptureKind.HANDSHAKE: "Handshake captured",
-    CaptureKind.PMKID:     "PMKID captured",
-    CaptureKind.WEP_KEY:   "WEP key recovered",
+    CaptureKind.HANDSHAKE: "已捕获握手",
+    CaptureKind.PMKID:     "已捕获 PMKID",
+    CaptureKind.WEP_KEY:   "已恢复 WEP 密钥",
 }
 
 

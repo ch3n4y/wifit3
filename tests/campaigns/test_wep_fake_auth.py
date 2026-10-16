@@ -103,7 +103,7 @@ def test_rx_auth_reject_records_reason(mocker):
     fa = _fa(mocker)
     fa._active = True
     fa._rx_cb(WlanFrameParser.parse_80211_frame(_auth_resp(SELF_MAC, status=1), -40))
-    assert "Auth rejected" in fa.fail_reason
+    assert "认证被拒绝" in fa.fail_reason
 
 
 def test_rx_deauth_drops_association(mocker):
@@ -166,12 +166,12 @@ async def test_ensure_associated_retries_3x_then_fails_once(mocker):
     assert await fa.ensure_associated() is False
     assert fa.state == "failed"
     assert fa.stats.auth_attempts == 3          # 3 silent attempts
-    assert sum("failed" in m for m in logs) == 1  # logged exactly once
+    assert sum("失败" in m for m in logs) == 1  # logged exactly once
 
     # Within the post-failure backoff: immediate False, no new attempts/log.
     assert await fa.ensure_associated() is False
     assert fa.stats.auth_attempts == 3
-    assert sum("failed" in m for m in logs) == 1
+    assert sum("失败" in m for m in logs) == 1
 
 
 async def test_ensure_associated_logs_recovery_after_a_failure(mocker):
@@ -189,7 +189,7 @@ async def test_ensure_associated_logs_recovery_after_a_failure(mocker):
 
     assert await fa.ensure_associated() is True
     assert fa.state == "associated"
-    assert any("recovered" in m for m in logs)
+    assert any("已恢复" in m for m in logs)
 
 
 # ---- Lifecycle wiring ------------------------------------------------------

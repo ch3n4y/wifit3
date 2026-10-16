@@ -159,7 +159,7 @@ async def test_chop_and_forge_aborts_on_relayed_sentinel():
     d, _ = _daemon(probe=sentinel)
     d._log = logs.append
     assert await d._chop_and_forge(cipher) is None
-    assert any("bad-ICV" in m for m in logs)
+    assert any("ICV 错误" in m for m in logs)
 
 
 # ---- tag-and-read-back via a SIMULATED relaying AP (the live mechanism) -----
@@ -285,8 +285,8 @@ async def test_loop_picks_seed_from_store_and_chops_end_to_end():
     assert "f" in holder
     _assert_valid_forged_arp(holder["f"])
     # Tree-log shape: a plain "ChopChop: forging packet" header, then a └─✓ leaf.
-    assert any("forging packet" in m and not m.startswith(" ") for m in logs)
-    assert any("└─" in m and "ChopChop packet forged" in m for m in logs)
+    assert any("正在伪造数据包" in m and not m.startswith(" ") for m in logs)
+    assert any("└─" in m and "ChopChop 数据包已伪造" in m for m in logs)
 
 
 def test_treelog_connectors():

@@ -203,4 +203,4 @@ async def test_pbc_enrollee_aborts_on_should_stop():
                       should_stop=lambda: True)
     out = await asyncio.wait_for(enr.run(), timeout=5.0)
     assert out.result is PinResult.ABORTED
-    assert "stopped" in out.detail
+    assert "停止" in out.detail
